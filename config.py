@@ -1,0 +1,20 @@
+import os
+from dotenv import dotenv_values
+
+dotenv_values()
+
+TOKEN = os.getenv('TOKEN')
+API_KEY=os.getenv('API_KEY')
+MILVUS_HOST = os.getenv("MILVUS_HOST", "127.0.0.1")
+MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
+
+
+HOST_MYSQL= os.getenv('HOST_MYSQL')
+PORT_MYSQL= os.getenv('PORT_MYSQL')
+USER_MYSQL= os.getenv('USER_MYSQL')
+PASSWORD_MYSQL= os.getenv('PASSWORD_MYSQL')
+DB_MYSQL= os.getenv('DB_MYSQL')
+
+POSTGRES_USER=os.getenv('POSTGRES_USER')
+POSTGRES_PASSWORD=os.getenv('POSTGRES_PASSWORD')
+POSTGRES_DB=os.getenv('POSTGRES_DB')
