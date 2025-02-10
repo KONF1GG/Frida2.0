@@ -199,13 +199,14 @@ async def message_handler(message: Message):
         result_string += f"{i}) Зпрос пользователя: {query}\nТвой ответ: {response}\n"
     combined_context = ""
 
+    print(result_string)
     for i, (book_name, text, url) in enumerate(contexts, start=1):
         book_name = book_name if book_name else ''
         combined_context += f"Контекст {i}:\n{book_name+'\n'+text}\nURL: {url}\n"
 
     await message.bot.send_chat_action(message.chat.id, ChatAction.TYPING)
     mistral_response = await mistral(message.text, combined_context, result_string)
-    if mistral:
+    if mistral_response:
         await message.bot.send_chat_action(message.chat.id, ChatAction.TYPING)
         postgres_db.log_message(message.from_user.id, message.text, mistral_response, hashs)
         await message.answer(f'{mistral_response}', parse_mode=ParseMode.HTML)
