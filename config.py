@@ -18,3 +18,19 @@ DB_MYSQL= os.getenv('DB_MYSQL')
 POSTGRES_USER=os.getenv('POSTGRES_USER')
 POSTGRES_PASSWORD=os.getenv('POSTGRES_PASSWORD')
 POSTGRES_DB=os.getenv('POSTGRES_DB')
+
+mysql_config = {
+    'host': HOST_MYSQL,
+    'port': PORT_MYSQL,
+    'user': USER_MYSQL,
+    'password': PASSWORD_MYSQL,
+    'database': DB_MYSQL
+}
+
+postgres_config = {
+    'host': 'localhost',
+    'port': 5432,
+    'user': POSTGRES_USER,
+    'password': POSTGRES_PASSWORD,
+    'database': POSTGRES_DB
+}
