@@ -36,7 +36,6 @@ class TopicForm(StatesGroup):
     waiting_for_title = State()
     waiting_for_text = State()
 
-# Обработчик нажатия кнопки "Отмена" на любой стадии
 @router.callback_query(lambda c: c.data in ('cancel'))
 @check_and_add_user
 async def cancel_add_topic(callback_query: CallbackQuery, state: FSMContext):
@@ -62,16 +61,13 @@ async def cancel_add_topic(callback_query: CallbackQuery, state: FSMContext):
 @check_and_add_user
 @send_typing_action
 async def handle_add_topic(message: Message, state: FSMContext):
-    # Отправляем запрос на заголовок с кнопкой "Отмена"
     msg = await message.answer("Пожалуйста, введите заголовок для новой темы, которую я запомню:",
                                reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Отмена", callback_data='cancel')]]))
     
     await state.set_data({'user_title_message_id': message.message_id, 'bot_title_message_id': msg.message_id})
-    # Устанавливаем состояние
     await state.set_state(TopicForm.waiting_for_title)
 
 
-# Обработчик для ввода заголовка
 @router.message(TopicForm.waiting_for_title)
 @check_and_add_user
 @send_typing_action
@@ -108,12 +104,9 @@ async def process_text(message: Message, state: FSMContext):
     title = data['title']
 
     msg = await message.answer('Секунду, мне нужно время, чтобы запомнить...')
-    
-    # Добавляем новый топик в базу данных
     responese = add_new_topic(title, text, message.from_user.id)
 
     await msg.delete()
-    # Редактируем сообщение, где просили ввести текст
     bot_text_message_id = data['bot_title_message_id']
     if responese:
         await message.delete()
