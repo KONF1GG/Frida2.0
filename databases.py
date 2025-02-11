@@ -1,7 +1,4 @@
-import time
 from typing import List
-from httpx import delete
-import milvus_model
 import mysql.connector
 import psycopg2
 from pymilvus import Collection, CollectionSchema, FieldSchema, DataType, connections

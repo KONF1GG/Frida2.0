@@ -1,5 +1,4 @@
 from functools import wraps
-from socket import timeout
 from aiogram.types import Message
 from databases import PostgreSQL
 import config

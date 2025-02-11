@@ -1,7 +1,4 @@
-from multiprocessing.reduction import duplicate
-from os import dup
 import re
-from pydantic import PostgresDsn
 from sympy import EX
 import config
 from databases import Milvus, MySQL, PostgreSQL
