@@ -65,7 +65,7 @@ def insert_wiki_data():
             postgres_db.connection_close()
 
 
-def insert_all_data_from_postgres_to_milvus():
+def     insert_all_data_from_postgres_to_milvus():
     postgres_db = PostgreSQL(**config.postgres_config)
     milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Frida_bot_data')
     milvus_db.init_collection()
