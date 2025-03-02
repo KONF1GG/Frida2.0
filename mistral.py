@@ -1,10 +1,26 @@
 import time
+from typing import Literal
 from mistralai import Mistral
 from config import API_KEY
 
-async def mistral(query, context, history):
+async def mistral(query: str, context: str = "", history: str = "", input_type: Literal['voice', 'csv', 'text'] = 'text'):
     client = Mistral(api_key=API_KEY)
     model = "mistral-large-latest"
+
+    prompt_for_file = (
+        "Ты - Фрида, бот помощник. Обработай файл таблицы по запросу. Если нет вопроса то просто опиши таблицу. Используй HTML теги где нужно что то выделить. Делай текст хорошо структурированным и понятным. НЕ ИСПОЛЬЗУЙ MARKDOWN. Только эти теги HTML (<b>, <i>, <a>, <code>, <pre>) НЕЛЬЗЯ ИСПОЛЬЗОВАТЬ <ul>!"
+        "Отвечай четко и кратко на вопрос и только на русском"
+        "Вопрос: " + query + "\n"
+        "Таблица: " + context
+
+    )
+
+    promt_for_voice = (
+        "Ты - Фрида, бот помощник. Твой задача проанализировать вопрос и конекст звукового файла. Учитывай, что текст может содержать ошибки, поскольку был обработан из голосового сообщения. Если вопроса нет, отвечай согласно тексту голосового сообщения. Используй HTML теги где нужно что то выделить. Делай текст хорошо структурированным и понятным. НЕ ИСПОЛЬЗУЙ MARKDOWN. Только эти теги HTML (<b>, <i>, <a>, <code>, <pre>) НЕЛЬЗЯ ИСПОЛЬЗОВАТЬ <ul>!"
+        "Отвечай четко и кратко на вопрос и только на русском"
+        "Вопрос: " + query + "\n"
+        "Расшифрованное голосовое сообщение:" + context
+    )
 
     prompt = (
         "Ты — Фрида, бот-помощник компании Фридом. Твоя задача — отвечать на вопросы сотрудников компании, основываясь на предоставленных контекстах, содержащих важную информацию из статей.\n\n"
@@ -37,13 +53,14 @@ async def mistral(query, context, history):
     retries = 3  # Количество попыток
     delay = 2  # Задержка между попытками
 
+
     for _ in range(retries):
         try:
             chat_response = client.chat.complete(
                 model=model,
                 messages=[{
                     "role": "user",
-                    "content": prompt,
+                    "content": prompt_for_file if input_type == 'csv' else promt_for_voice if input_type == 'voice' else prompt,
                 }]
             )
 

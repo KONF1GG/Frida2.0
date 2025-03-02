@@ -34,3 +34,7 @@ postgres_config = {
     'password': POSTGRES_PASSWORD,
     'database': POSTGRES_DB
 }
+
+loading_sticker = "CAACAgIAAxkBAAJMS2YHPrVKVmiyNhVR3J5vQE2Qpu-kAAIjAAMoD2oUJ1El54wgpAY0BA"
+
+WHISPER_API  = os.getenv('WHISPER_API')

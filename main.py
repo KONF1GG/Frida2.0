@@ -17,7 +17,7 @@ async def main():
     commands = [
         {"command": "/start", "description": "Запуск бота"},
         {"command": "/loaddata", "description": "Выгрузить данные Вики"},
-        {"command": "/addtopic", "description": "Добавть контекст"},
+        {"command": "/addtopic", "description": "Добавть контекст"}
     ]
     
     await bot.set_my_commands(commands)

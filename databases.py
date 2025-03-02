@@ -231,7 +231,7 @@ class Milvus:
 
         collections = utility.list_collections()
 
-        if collections:
+        if collection_name in collections:
             self.collection = Collection(self.collection_name)
             if self.collection.num_entities > 0:
                 self.collection.load()
@@ -251,7 +251,7 @@ class Milvus:
     def init_collection(self):
         try:
             collections = utility.list_collections()
-            if collections:
+            if self.collection.name in collections:
                 collection = Collection(self.collection_name)
                 collection.drop()
                 print(f"Коллекция {self.collection_name} была удалена.")
