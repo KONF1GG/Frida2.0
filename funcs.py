@@ -1,10 +1,5 @@
 import hashlib
 from sentence_transformers import SentenceTransformer
-import whisperx
-import librosa
-import numpy as np
-import tempfile
-import os
 
 model = SentenceTransformer('distiluse-base-multilingual-cased-v1')
 # model = whisperx.load_model("large-v3", 'cpu', compute_type='float32', language='ru')

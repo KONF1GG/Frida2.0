@@ -13,3 +13,18 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: my_telegram_bot
+    restart: always
+    env-file:
+      - '.env' 
+    depends_on:
+      - db
+    volumes:
+      - .:/app  
+    networks:
+      - default

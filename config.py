@@ -29,7 +29,7 @@ mysql_config = {
 
 postgres_config = {
     'host': 'localhost',
-    'port': 5431,
+    'port': 5432,
     'user': POSTGRES_USER,
     'password': POSTGRES_PASSWORD,
     'database': POSTGRES_DB

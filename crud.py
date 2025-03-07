@@ -1,5 +1,4 @@
 import re
-from sympy import EX
 import config
 from databases import Milvus, MySQL, PostgreSQL
 import funcs

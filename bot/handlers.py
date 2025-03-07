@@ -1,15 +1,10 @@
 import asyncio
-from email.errors import MessageError
 from io import StringIO
-import os
-import tempfile
 from aiogram import Router
 from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from aiogram.filters import CommandStart, Command
 from aiogram.enums.chat_action import ChatAction
 from aiogram.enums import ParseMode
-from regex import R
-from sympy import content
 import config
 from databases import Milvus
 # from funcs import transcribe_audio
@@ -18,7 +13,6 @@ from crud import PostgreSQL, add_new_topic, insert_all_data_from_postgres_to_mil
 from config import WHISPER_API, postgres_config
 from mistral import mistral
 from aiogram.fsm.context import FSMContext
-from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import CallbackQuery, ContentType
 from config import loading_sticker
@@ -183,6 +177,7 @@ async def handle_loaddata_command(message: Message):
 @send_typing_action
 async def handle_file(message: Message):
     file = message.document
+    loading_message = await message.answer_sticker(loading_sticker)
 
     try:
         file_info = await message.bot.get_file(file.file_id)
@@ -230,7 +225,6 @@ async def handle_file(message: Message):
             return
 
         query = message.caption if message.caption else "Напиши общий отчет по таблице"
-        loading_message = await message.answer_sticker(loading_sticker)
         try:
             message.answer(query)
             mistral_response = await mistral(query, context=csv_text,  input_type='csv')
@@ -277,51 +271,45 @@ async def search_milvus(text, user_id, postgres_db: PostgreSQL):
 @router.message(lambda message: message.content_type in [ContentType.VOICE, ContentType.AUDIO])
 async def handle_audio_or_voice(message: Message):
     """Обработка голосовых сообщений и аудио файлов."""
-    postgres = PostgreSQL(**postgres_config)
-    isAdmin = postgres.check_user_is_admin(message.from_user.id)
+    postgres = PostgreSQL(**config.postgres_config)
     file = message.voice if message.voice else message.audio
+    if not file:
+        await message.answer('Ошибка: Не удалось обработать аудио сообщение')
+        return
 
-    if isAdmin:
-        if not file:
-            await message.answer('Ошибка: Не удалось обработать аудио сообщение')
-            return
+    file_id = file.file_id
+    file_info = await message.bot.get_file(file_id)
+    file_path = file_info.file_path
 
-        file_id = file.file_id
-        file_info = await message.bot.get_file(file_id)
-        file_path = file_info.file_path
+    async with aiohttp.ClientSession() as session:
+        loading_message = await message.answer_sticker(loading_sticker)
+        try:
+            # Получаем файл с серверов Telegram
+            file_url = f'https://api.telegram.org/file/bot{message.bot.token}/{file_path}'
+            async with session.get(file_url) as response:
+                if response.status == 200:
+                    audio_data = await response.read()
+                    form_data = aiohttp.FormData()
+                    form_data.add_field('file', audio_data, filename='audio.ogg', content_type='audio/ogg')
 
-        async with aiohttp.ClientSession() as session:
-            loading_message = await message.answer_sticker(loading_sticker)
-            try:
-                # Получаем файл с серверов Telegram
-                file_url = f'https://api.telegram.org/file/bot{message.bot.token}/{file_path}'
-                async with session.get(file_url) as response:
-                    if response.status == 200:
-                        audio_data = await response.read()
-                        form_data = aiohttp.FormData()
-                        form_data.add_field('file', audio_data, filename='audio.ogg', content_type='audio/ogg')
+                    # Отправка файла на API Whisper
+                    async with session.post(f'{WHISPER_API}/transcribe/', data=form_data) as api_response:
+                        if api_response.status == 200:
+                            result = await api_response.json()
+                            task_id = result.get('task_id')
 
-                        # Отправка файла на API Whisper
-                        async with session.post(f'{WHISPER_API}/transcribe/', data=form_data) as api_response:
-                            if api_response.status == 200:
-                                result = await api_response.json()
-                                task_id = result.get('task_id')
+                            # Запуск проверки статуса транскрипции
+                            await check_transcription_status(task_id, message, session)
 
-                                # Запуск проверки статуса транскрипции
-                                await check_transcription_status(task_id, message, session)
+                        else:
+                            
+                            await message.answer('Ошибка при отправке файла на транскрипцию. Попробуйте позже.')
+        except Exception as e:
+            print(f"Ошибка при обработке аудио: {e}")
+            await message.answer('Произошла ошибка при обработке вашего аудио сообщения.')
+        finally:
+            await loading_message.delete()
 
-                            else:
-                                
-                                await message.answer('Ошибка при отправке файла на транскрипцию. Попробуйте позже.')
-            except Exception as e:
-                print(f"Ошибка при обработке аудио: {e}")
-                await message.answer('Произошла ошибка при обработке вашего аудио сообщения.')
-            finally:
-                await loading_message.delete()
-
-    else:
-        postgres.connection_close()
-        await message.answer('Прошу прощения, но я не умею обрабатывать аудио сообщения.\n')
 
 
 async def check_transcription_status(task_id: str, message: Message, session: aiohttp.ClientSession):
@@ -353,6 +341,7 @@ async def check_transcription_status(task_id: str, message: Message, session: ai
 async def fetch_transcription_result(task_id: str, message: Message, session: aiohttp.ClientSession):
     """Получаем результат транскрипции."""
     try:
+        postgres_db = PostgreSQL(**config.postgres_config)
         async with session.get(f'{WHISPER_API}/transcribe/result/{task_id}') as response:
             if response.status == 200:
                 transcription = await response.json()
@@ -366,33 +355,45 @@ async def fetch_transcription_result(task_id: str, message: Message, session: ai
                         if not message.caption:
                             query = transcription_text
                             try:
-                                postgres_db = PostgreSQL(**config.postgres_config)
+
                                 result = await search_milvus(query, message.from_user.id, postgres_db)
 
                                 mistral_response = await mistral(query, result.get('combined_context'), result.get('result_string'))
                                 
                                 if mistral_response:
                                     await message.answer(f'{mistral_response}', parse_mode=ParseMode.HTML)
-                                    postgres_db.log_message(message.from_user.id, message.text, mistral_response, result.get('hashs'))
+                                    postgres_db.log_message(message.from_user.id,'Расшифрованное голосовое: ' + transcription_text, mistral_response, result.get('hashs'))
                                 else:
                                     await message.answer('Прошу прощения, я не смогла обработать Ваш запрос. Попробуйте позже...', parse_mode=ParseMode.HTML)
                             
                             except Exception as e:
                                 await message.answer(f"Произошла ошибка: {str(e)}", parse_mode=ParseMode.HTML)
                         else:
-                            await message.answer("Пока не могу обработать такое, но скоро смогу!")
+                            result_string = ''
+                            message_hostory = postgres_db.get_history(message.from_user.id)
+                            for i, msg in enumerate(message_hostory, 1):
+                                query = msg[2]
+                                response = msg[3]
 
+                                result_string += f"{i}) Зпрос пользователя: {query}\nТвой ответ: {response}\n"
+                            mistral_response = await mistral(message.caption, context=transcription_text, history=result_string)
 
+                            if mistral_response:
+                                await message.answer(f'{mistral_response}', parse_mode=ParseMode.HTML)
+                                postgres_db.log_message(message.from_user.id, message.caption + 'Расшифрованное голосовое: ' + transcription_text , mistral_response, '')
+                            else:
+                                await message.answer('Прошу прощения, я не смогла обработать Ваш запрос. Попробуйте позже...', parse_mode=ParseMode.HTML)
                     else:
                         await message.answer("Не удалось получить текст транскрипции. Пожалуйста, попробуйте позже.")
                 else:
-                    # Если результат не содержит сегментов
                     await message.answer("Не удалось найти транскрипцию в ответе от сервера.")
             else:
                 await message.answer("Не удалось получить результат транскрипции.")
     except Exception as e:
         print(f"Ошибка при получении результата транскрипции: {e}")
         await message.answer("Ошибка при получении результата транскрипции.")
+    finally:
+        postgres_db.connection_close()
 
 
 @router.message()
