@@ -211,7 +211,7 @@ class PostgreSQL:
 
 class Milvus:
     def __init__(self, host, port, collection_name):
-        connections.connect("default", host, port)
+        connections.connect("default", host=host, port=port)
 
         self.collection_name = collection_name
 

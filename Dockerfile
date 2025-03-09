@@ -1,15 +1,15 @@
-FROM python:3.10-slim
+FROM python:3.12-slim-bookworm
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+ADD . /app
 
 WORKDIR /app
 
-COPY . .
-
-RUN pip install uv
-
 RUN uv venv
 
-RUN source .venv/bin/activate
+ENV UV_PROJECT_ENVIRONMENT=/env
 
-RUN uv sync
+RUN uv sync --frozen --no-cache
 
 CMD ["uv", "run", "main.py"]
