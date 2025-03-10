@@ -9,9 +9,11 @@ dependencies = [
     "debugpy>=1.8.13",
     "mistralai>=1.5.1",
     "mysql-connector-python>=9.2.0",
+    "openpyxl>=3.1.5",
     "psycopg2-binary>=2.9.10",
     "pymilvus>=2.5.5",
     "python-dotenv>=1.0.1",
     "scikit-learn>=1.6.1",
     "sentence-transformers>=3.4.1",
+    "xlrd>=2.0.1",
 ]
