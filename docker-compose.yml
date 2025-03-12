@@ -77,7 +77,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sq
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - milvus_network 
       
@@ -100,3 +101,7 @@ networks:
   milvus_network:
     driver: bridge
     name: milvus_network 
+    
+volumes:
+  postgres_data:
+    driver: local
