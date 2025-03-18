@@ -4,6 +4,7 @@ import psycopg2
 from pymilvus import Collection, CollectionSchema, FieldSchema, DataType, connections
 from sklearn.preprocessing import normalize
 from pymilvus import utility
+import torch
 import funcs
 from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType
 from pymilvus.exceptions import MilvusException
@@ -78,14 +79,14 @@ class PostgreSQL:
         
         self.connection.commit()
 
-    def log_message(self, user_id, user_query, response, topic_hashs: List[str]):
+    def log_message(self, user_id, user_query, response, response_status, topic_hashs: List[str]):
         query = '''
-            INSERT INTO bot_logs (user_id, query, response)
-            VALUES (%s, %s, %s)
+            INSERT INTO bot_logs (user_id, query, response, response_status)
+            VALUES (%s, %s, %s, %s)
             RETURNING log_id;
         '''
         
-        self.cursor.execute(query, (user_id, user_query, response))
+        self.cursor.execute(query, (user_id, user_query, response, response_status))
         
         log_id = self.cursor.fetchone()[0]
         
@@ -153,37 +154,55 @@ class PostgreSQL:
         result = self.cursor.fetchall()
         return result
     
-    def get_items_by_hashs(self, hashs: tuple[str], user_id):
-        # Generate placeholders for each item in the hashs tuple
-        placeholders = ', '.join(['%s'] * len(hashs))
+    # def get_items_by_hashs(self, hashs: tuple[str], user_id):
+    #     # Generate placeholders for each item in the hashs tuple
+    #     placeholders = ', '.join(['%s'] * len(hashs))
         
-        query = f'''
-        SELECT book_name, text, url
-        FROM frida_storage fs
-        WHERE fs.hash IN (
-            SELECT DISTINCT blth.topic_hash
-            FROM bot_log_topic_hashes blth
-            JOIN bot_logs bl ON blth.log_id = bl.log_id
-            WHERE bl.log_id IN (
-                SELECT bl.log_id
-                FROM bot_logs bl
-                WHERE bl.user_id = %s
-                ORDER BY bl.created_at DESC
-                LIMIT 3
-            )
-            UNION
-            SELECT %s
-        )
-        AND fs.hash IN ({placeholders});
-        '''
-        params = (user_id, hashs[0], *hashs)
+    #     query = f'''
+    #     SELECT book_name, text, url
+    #     FROM frida_storage fs
+    #     WHERE fs.hash IN (
+    #         SELECT DISTINCT blth.topic_hash
+    #         FROM bot_log_topic_hashes blth
+    #         JOIN bot_logs bl ON blth.log_id = bl.log_id
+    #         WHERE bl.log_id IN (
+    #             SELECT bl.log_id
+    #             FROM bot_logs bl
+    #             WHERE bl.user_id = %s
+    #             ORDER BY bl.created_at DESC
+    #             LIMIT 3
+    #         )
+    #         UNION
+    #         SELECT %s
+    #     )
+    #     AND fs.hash IN ({placeholders});
+    #     '''
+    #     params = (user_id, hashs[0], *hashs)
 
-        self.cursor.execute(query, params)
+    #     self.cursor.execute(query, params)
 
-        result = self.cursor.fetchall()
-        return result
+    #     result = self.cursor.fetchall()
+    #     return result
+    def get_topics_texts_by_hashs(self, hashs: tuple[str]):
+        if not hashs:
+            return []
 
-    
+        placeholders = ', '.join(['%s'] * len(hashs))
+
+        query = '''
+            SELECT book_name, text, url
+            FROM frida_storage fs
+            WHERE fs.hash IN ({})
+        '''.format(placeholders)
+
+        try:
+            self.cursor.execute(query, hashs)
+            result = self.cursor.fetchall()
+            return result
+        except Exception as e:
+            print(f"Database error: {e}")
+            return []
+        
     def delete_items_by_hashs(self, hashs: set[str]):
 
         hashs = tuple(hashs)
@@ -217,8 +236,8 @@ class Milvus:
 
         self.fields = [
             FieldSchema(name='hash', dtype=DataType.VARCHAR, is_primary=True, max_length=255),
-            FieldSchema(name='embedding', dtype=DataType.FLOAT_VECTOR, dim=512),
-            FieldSchema(name='embeddingTitleLess', dtype=DataType.FLOAT_VECTOR, dim=512) 
+            FieldSchema(name='embedding', dtype=DataType.FLOAT_VECTOR, dim=1024),
+            FieldSchema(name='embeddingTitleLess', dtype=DataType.FLOAT_VECTOR, dim=1024) 
         ]
 
         self.index_params = {
@@ -263,24 +282,34 @@ class Milvus:
             print(f"Ошибка при проверке или удалении коллекции: {e}")
 
     def insert_data(self, data: List[VectorWikiData]):
-        hashs, embeddings, embeddingsTitleLess = [], [], []
+        hashs, texts, titless_texts, embeddings, embeddings_titleLess = [], [], [], [], []
 
         for topic in data:
             hashs.append(topic.hash)
-            embeddings.append(funcs.generate_embedding(topic.text))
-            embeddingsTitleLess.append(funcs.generate_embedding(topic.textTitleLess))
+            texts.append(topic.text)
+            titless_texts.append(topic.textTitleLess)
+
+        batch_size = 8
+
+        for i in range(0, len(texts), batch_size):
+            embeddings.extend(funcs.generate_embedding(texts[i:i + batch_size]))
+            torch.cuda.empty_cache()
+        
+        for i in range(0, len(texts), batch_size):
+            embeddings_titleLess.extend(funcs.generate_embedding(texts[i:i + batch_size]))
+            torch.cuda.empty_cache()
 
         embeddings = normalize(embeddings, axis=1)
-        embeddingsTitleLess = normalize(embeddingsTitleLess, axis=1)
+        embeddings_titleLess = normalize(embeddings_titleLess, axis=1)
         
-        self.collection.insert([hashs, embeddings, embeddingsTitleLess])
+        self.collection.insert([hashs, embeddings, embeddings_titleLess])
 
         self.create_index()
 
 
     def search(self, query_text):
-        query_embedding = funcs.generate_embedding(query_text)
-        query_embedding = normalize([query_embedding], axis=1)
+        query_embedding = funcs.generate_embedding([f'query: {query_text}'])
+        query_embedding = normalize(query_embedding, axis=1)
 
         results = self.collection.search(
             data=query_embedding,

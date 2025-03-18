@@ -5,9 +5,14 @@ from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from config import TOKEN
 from bot.handlers import router
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+
+from crud import upload_data
 
 async def main():
     logging.basicConfig(level=logging.INFO)
+    scheduler = AsyncIOScheduler()
 
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
@@ -20,8 +25,15 @@ async def main():
         {"command": "/addtopic", "description": "Добавть контекст"}
     ]
     
+    scheduler.add_job(
+        upload_data,
+        trigger=CronTrigger(hour=23, minute=43),
+    )
+    scheduler.start()
     await bot.set_my_commands(commands)
-    await dp.start_polling(bot)
-
+    try:
+        await dp.start_polling(bot)
+    finally:
+        scheduler.shutdown()
 if __name__ == "__main__":
     asyncio.run(main())

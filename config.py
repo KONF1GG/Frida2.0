@@ -5,7 +5,8 @@ dotenv_values()
 
 TOKEN = os.getenv('TOKEN')
 API_KEY=os.getenv('API_KEY')
-MILVUS_HOST = os.getenv("MILVUS_HOST", "standalone")
+# MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
+MILVUS_HOST = 'localhost'
 MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
 
 
@@ -28,7 +29,7 @@ mysql_config = {
 }
 
 postgres_config = {
-    'host': 'db',
+    'host': 'localhost',
     'port': 5432,
     'user': POSTGRES_USER,
     'password': POSTGRES_PASSWORD,

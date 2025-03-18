@@ -21,6 +21,7 @@ CREATE TABLE IF not EXISTS bot_logs (
    user_id BIGINT,
    query VARCHAR,
    response TEXT,
+   response_status BOOLEAN,
    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,           
    CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(user_id)
 );

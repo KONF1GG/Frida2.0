@@ -64,7 +64,7 @@ def insert_wiki_data():
             postgres_db.connection_close()
 
 
-def     insert_all_data_from_postgres_to_milvus():
+def insert_all_data_from_postgres_to_milvus():
     postgres_db = PostgreSQL(**config.postgres_config)
     milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Frida_bot_data')
     milvus_db.init_collection()
@@ -76,8 +76,9 @@ def     insert_all_data_from_postgres_to_milvus():
         book_name = topic[1] if topic[1] else ''
         title = topic[2]
         textTitleLess = topic[3]
-        text = book_name + '\n' + title + textTitleLess
+        text = 'passage: ' + book_name + '\n' + title + ' ' + textTitleLess
         data_list.append(VectorWikiData(hash=hash, text=text, textTitleLess=textTitleLess))
+        
     milvus_db.insert_data(data_list)
     milvus_db.create_index()
     duplicates = milvus_db.clean_similar_vectors()
@@ -106,6 +107,6 @@ def add_new_topic(title, text, user_id):
 
 
 
-
-# insert_wiki_data()
-# insert_all_data_from_postgres_to_milvus()
+async def upload_data():
+    insert_wiki_data()
+    insert_all_data_from_postgres_to_milvus()
