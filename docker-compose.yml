@@ -68,7 +68,7 @@ services:
 
   db:
     image: postgres:14.3-alpine
-    container_name: my_postgres
+    container_name: frida_db
     restart: always
     ports:
       - "5431:5432"
