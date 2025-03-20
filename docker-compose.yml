@@ -94,7 +94,7 @@ services:
       - db
     volumes:
       - .:/app
-      - ~/.cache/huggingface/hub:/root/.cache/huggingface/hub  
+      - /home/data/models/multilingual-e5-large:/root/.cache/huggingface/hub  
     networks:
       - milvus_network 
 
