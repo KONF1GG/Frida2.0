@@ -94,7 +94,7 @@ services:
       - db
     volumes:
       - .:/app
-      - ~/.cache/huggingface/hub:~/.cache/huggingface/hub  
+      - ~/.cache/huggingface/hub:/root/.cache/huggingface/hub  
     networks:
       - milvus_network 
 
