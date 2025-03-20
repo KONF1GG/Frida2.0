@@ -5,10 +5,8 @@ import hashlib
 from torch import Tensor
 
 
-model_path = "/root/.cache/huggingface/hub/models--intfloat--multilingual-e5-large"
-
-model = AutoModel.from_pretrained(model_path)
-tokenizer = AutoTokenizer.from_pretrained(model_path)
+model = AutoModel.from_pretrained('intfloat/multilingual-e5-large')
+tokenizer = AutoTokenizer.from_pretrained('intfloat/multilingual-e5-large')
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
