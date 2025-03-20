@@ -1,11 +1,9 @@
-import os
 import torch
 from unidecode import unidecode
 from transformers import AutoTokenizer, AutoModel
 import hashlib
 from torch import Tensor
 
-model_path = os.getenv("MODEL_PATH", "intfloat/multilingual-e5-large")
 
 model = AutoModel.from_pretrained('intfloat/multilingual-e5-large')
 tokenizer = AutoTokenizer.from_pretrained('intfloat/multilingual-e5-large')
