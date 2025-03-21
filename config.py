@@ -6,7 +6,6 @@ dotenv_values()
 TOKEN = os.getenv('TOKEN')
 API_KEY=os.getenv('API_KEY')
 MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
-# MILVUS_HOST = 'localhost'
 MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
 
 
@@ -19,6 +18,8 @@ DB_MYSQL= os.getenv('DB_MYSQL')
 POSTGRES_USER=os.getenv('POSTGRES_USER')
 POSTGRES_PASSWORD=os.getenv('POSTGRES_PASSWORD')
 POSTGRES_DB=os.getenv('POSTGRES_DB')
+POSTGRES_HOST = os.getenv('POSTGRES_HOST')
+POSTGRES_PORT = os.getenv('POSTGRES_PORT')
 
 mysql_config = {
     'host': HOST_MYSQL,
@@ -29,8 +30,8 @@ mysql_config = {
 }
 
 postgres_config = {
-    'host': 'frida_db',
-    'port': 5432,
+    'host': POSTGRES_HOST,
+    'port': POSTGRES_PORT,
     'user': POSTGRES_USER,
     'password': POSTGRES_PASSWORD,
     'database': POSTGRES_DB
