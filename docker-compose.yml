@@ -45,7 +45,7 @@ services:
     image: milvusdb/milvus:v2.5.5
     command: ["milvus", "run", "standalone"]
     security_opt:
-    - seccomp:unconfined
+      - seccomp:unconfined
     environment:
       ETCD_ENDPOINTS: etcd:2379
       MINIO_ADDRESS: minio:9000
@@ -81,18 +81,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - milvus_network 
-      
+
   bot:
     build:
       context: .
       dockerfile: Dockerfile
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
     container_name: my_telegram_bot
     restart: always
     env_file:
@@ -101,7 +94,14 @@ services:
       - db
     volumes:
       - .:/app
-      - ~/.cache/huggingface/hub:/root/.cache/huggingface/hub  
+      - ~/.cache/huggingface/hub:/root/.cache/huggingface/hub
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     networks:
       - milvus_network 
 
