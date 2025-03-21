@@ -3,7 +3,7 @@ name = "fridabot"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = "~=3.11"
+requires-python = "~=3.10"
 dependencies = [
     "aiogram>=3.18.0",
     "apscheduler>=3.11.0",
