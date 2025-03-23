@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: my_telegram_bot
-    restart: always
+    # restart: always
     env_file:
       - path: ./.env
     volumes:

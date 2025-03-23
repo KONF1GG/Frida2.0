@@ -27,7 +27,7 @@ async def main():
     
     scheduler.add_job(
         upload_data,
-        trigger=CronTrigger(hour=23, minute=43),
+        trigger=CronTrigger(hour=2, minute=00),
     )
     scheduler.start()
     await bot.set_my_commands(commands)
