@@ -289,7 +289,7 @@ class Milvus:
             texts.append(topic.text)
             titless_texts.append(topic.textTitleLess)
 
-        batch_size = 8
+        batch_size = 4
 
         for i in range(0, len(texts), batch_size):
             embeddings.extend(funcs.generate_embedding(texts[i:i + batch_size]))
