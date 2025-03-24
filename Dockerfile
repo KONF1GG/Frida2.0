@@ -65,7 +65,7 @@ ADD . /app
 WORKDIR /app
 
 # Устанавливаем зависимости из requirements.txt
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt --no-cache-dir
 
 # Понижаем версию NumPy, чтобы зависимости работали
 RUN pip install "numpy<2.0"
