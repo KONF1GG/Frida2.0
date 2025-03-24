@@ -8,6 +8,8 @@ import torch
 import funcs
 from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType
 from pymilvus.exceptions import MilvusException
+from contextlib import contextmanager
+from funcs import clear_gpu_memory, use_device
 
 from scheme import VectorWikiData
 
@@ -228,6 +230,17 @@ class PostgreSQL:
         self.connection.close()
 
 
+# @contextmanager
+# def use_device(model, device):
+#     original_device = next(model.parameters()).device
+#     if original_device != device:
+#         model.to(device)
+#     try:
+#         yield
+#     finally:
+#         if original_device != device:
+#             model.to(original_device)
+
 class Milvus:
     def __init__(self, host, port, collection_name):
         connections.connect("default", host=host, port=port)
@@ -289,16 +302,19 @@ class Milvus:
             texts.append(topic.text)
             titless_texts.append(topic.textTitleLess)
 
-        batch_size = 4
+        batch_size = 2
 
-        for i in range(0, len(texts), batch_size):
-            embeddings.extend(funcs.generate_embedding(texts[i:i + batch_size]))
-            torch.cuda.empty_cache()
-        
-        for i in range(0, len(texts), batch_size):
-            embeddings_titleLess.extend(funcs.generate_embedding(texts[i:i + batch_size]))
-            torch.cuda.empty_cache()
+        with use_device(funcs.model, funcs.device):  # Модель временно перемещается на GPU
+            for i in range(0, len(texts), batch_size):
+                embeddings.extend(funcs.generate_embedding(texts[i:i + batch_size]))
+                torch.cuda.empty_cache()
+            
+            for i in range(0, len(texts), batch_size):
+                embeddings_titleLess.extend(funcs.generate_embedding(texts[i:i + batch_size]))
+                torch.cuda.empty_cache()
 
+
+        clear_gpu_memory()
         embeddings = normalize(embeddings, axis=1)
         embeddings_titleLess = normalize(embeddings_titleLess, axis=1)
         
@@ -308,7 +324,10 @@ class Milvus:
 
 
     def search(self, query_text):
-        query_embedding = funcs.generate_embedding([f'query: {query_text}'])
+        with use_device(funcs.model, funcs.device):
+            query_embedding = funcs.generate_embedding([f'query: {query_text}'])
+
+        clear_gpu_memory()
         query_embedding = normalize(query_embedding, axis=1)
 
         results = self.collection.search(
@@ -358,7 +377,7 @@ class Milvus:
     def connection_close(self):
         connections.disconnect("default")
 
-    
+
 
 
 
