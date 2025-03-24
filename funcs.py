@@ -7,8 +7,8 @@ import logging
 from contextlib import contextmanager
 import gc
 # 
-# model_base_path = "/root/.cache/huggingface/hub/models--intfloat--multilingual-e5-large/snapshots/0dc5580a448e4284468b8909bae50fa925907bc5"
-model_base_path = 'C:\\Users\\krokx\\.cache\\huggingface\\hub\\models--intfloat--multilingual-e5-large\\snapshots\\0dc5580a448e4284468b8909bae50fa925907bc5'
+model_base_path = "/root/.cache/huggingface/hub/models--intfloat--multilingual-e5-large/snapshots/0dc5580a448e4284468b8909bae50fa925907bc5"
+# model_base_path = 'C:\\Users\\krokx\\.cache\\huggingface\\hub\\models--intfloat--multilingual-e5-large\\snapshots\\0dc5580a448e4284468b8909bae50fa925907bc5'
 
 model = AutoModel.from_pretrained(model_base_path)
 tokenizer = AutoTokenizer.from_pretrained(model_base_path)
