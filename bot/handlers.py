@@ -473,7 +473,7 @@ async def handle_audio_or_voice(message: Message):
         except Exception as e:
             print(f"Ошибка при обработке аудио: {e}")
             postgres_db = PostgreSQL(**postgres_config)
-            postgres_db.log_message(message.from_user.id, message.text, str(e), False, result.get('hashs'))
+            postgres_db.log_message(message.from_user.id, message.text, str(e), False, [''])
             postgres_db.connection_close()
             await message.answer('Произошла ошибка при обработке вашего аудио сообщения.')
         finally:
