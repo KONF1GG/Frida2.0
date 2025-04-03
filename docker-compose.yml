@@ -10,7 +10,7 @@ services:
     env_file:
       - path: ./.env
     volumes:
-      - .:/app
+      - shared-data:/shared
       - ~/.cache/huggingface/hub:/root/.cache/huggingface/hub
     deploy:
       resources:
@@ -20,3 +20,7 @@ services:
               count: all
               capabilities: [gpu]
 
+volumes:
+  shared-data:
+    external: true
+    
