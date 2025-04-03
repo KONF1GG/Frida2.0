@@ -1,4 +1,5 @@
 from typing import List
+from GPU_control import gpu_lock
 import mysql.connector
 import psycopg2
 from pymilvus import Collection, CollectionSchema, FieldSchema, DataType, connections
@@ -304,14 +305,15 @@ class Milvus:
 
         batch_size = 2
 
-        with use_device(funcs.model, funcs.device):  # Модель временно перемещается на GPU
-            for i in range(0, len(texts), batch_size):
-                embeddings.extend(funcs.generate_embedding(texts[i:i + batch_size]))
-                torch.cuda.empty_cache()
-            
-            for i in range(0, len(texts), batch_size):
-                embeddings_titleLess.extend(funcs.generate_embedding(texts[i:i + batch_size]))
-                torch.cuda.empty_cache()
+        with gpu_lock(timeout=30):
+            with use_device(funcs.model, funcs.device):  # Модель временно перемещается на GPU
+                for i in range(0, len(texts), batch_size):
+                    embeddings.extend(funcs.generate_embedding(texts[i:i + batch_size]))
+                    torch.cuda.empty_cache()
+                
+                for i in range(0, len(texts), batch_size):
+                    embeddings_titleLess.extend(funcs.generate_embedding(texts[i:i + batch_size]))
+                    torch.cuda.empty_cache()
 
 
         clear_gpu_memory()
