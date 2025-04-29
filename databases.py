@@ -326,8 +326,9 @@ class Milvus:
 
 
     def search(self, query_text):
-        with use_device(funcs.model, funcs.device):
-            query_embedding = funcs.generate_embedding([f'query: {query_text}'])
+        with gpu_lock(timeout=10):
+            with use_device(funcs.model, funcs.device):
+                query_embedding = funcs.generate_embedding([f'query: {query_text}'])
 
         clear_gpu_memory()
         query_embedding = normalize(query_embedding, axis=1)

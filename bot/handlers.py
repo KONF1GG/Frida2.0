@@ -537,6 +537,9 @@ async def fetch_transcription_result(task_id: str, message: Message, session: ai
                                     await message.answer(err_mes, parse_mode=ParseMode.HTML)
                                     postgres_db.log_message(message.from_user.id,'Расшифрованное голосовое: ' + transcription_text, err_mes, False, result.get('hashs'))
 
+                            except RuntimeError as e:
+                                postgres_db.log_message(message.from_user.id,'Расшифрованное голосовое: ' + transcription_text, 'gpu timeout: ' + str(e), False, result.get('hashs'))
+                                await message.answer(f"Произошла ошибка: {str(e)}", parse_mode=ParseMode.HTML)
                             except Exception as e:
                                 postgres_db.log_message(message.from_user.id,'Расшифрованное голосовое: ' + transcription_text, str(e), False, result.get('hashs'))
                                 await message.answer(f"Произошла ошибка: {str(e)}", parse_mode=ParseMode.HTML)
