@@ -4,9 +4,10 @@ from dotenv import dotenv_values
 dotenv_values()
 
 TOKEN = os.getenv('TOKEN')
+TEST_TOKEN = os.getenv('TEST_TOKEN')
 API_KEY=os.getenv('API_KEY')
-MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
-MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
+# MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
+# MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
 
 
 HOST_MYSQL= os.getenv('HOST_MYSQL')
@@ -21,22 +22,25 @@ POSTGRES_DB=os.getenv('POSTGRES_DB')
 POSTGRES_HOST = os.getenv('POSTGRES_HOST')
 POSTGRES_PORT = os.getenv('POSTGRES_PORT')
 
-mysql_config = {
-    'host': HOST_MYSQL,
-    'port': PORT_MYSQL,
-    'user': USER_MYSQL,
-    'password': PASSWORD_MYSQL,
-    'database': DB_MYSQL
-}
+# mysql_config = {
+#     'host': HOST_MYSQL,
+#     'port': PORT_MYSQL,
+#     'user': USER_MYSQL,
+#     'password': PASSWORD_MYSQL,
+#     'database': DB_MYSQL
+# }
 
-postgres_config = {
-    'host': POSTGRES_HOST,
-    'port': POSTGRES_PORT,
-    'user': POSTGRES_USER,
-    'password': POSTGRES_PASSWORD,
-    'database': POSTGRES_DB
-}
+# postgres_config = {
+#     'host': POSTGRES_HOST,
+#     'port': POSTGRES_PORT,
+#     'user': POSTGRES_USER,
+#     'password': POSTGRES_PASSWORD,
+#     'database': POSTGRES_DB
+# }
 
 loading_sticker = "CAACAgIAAxkBAAJMS2YHPrVKVmiyNhVR3J5vQE2Qpu-kAAIjAAMoD2oUJ1El54wgpAY0BA"
 
 WHISPER_API  = os.getenv('WHISPER_API')
+
+
+UTILS_URL = os.getenv('UTILS_URL')

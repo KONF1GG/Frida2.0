@@ -1,21 +1,31 @@
 from functools import wraps
+import logging
 from aiogram.types import Message
-from databases import PostgreSQL
-import config
+from api.auth import check_and_register_user
 from aiogram.enums.chat_action import ChatAction
+
+
+logger = logging.getLogger(__name__)
 
 def check_and_add_user(func):
     @wraps(func)
     async def wrapper(message: Message, *args, **kwargs):
-        postgres = PostgreSQL(**config.postgres_config)
+        user = message.from_user
         
-        if not postgres.user_exists(message.from_user.id):
-            postgres.add_user_to_db(message.from_user.id, message.from_user.username, message.from_user.first_name, message.from_user.last_name)
-
+        success = await check_and_register_user(
+            user_id=user.id,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            username=user.username,
+            message=message 
+        )
+        
+        if not success:
+            return None
+            
         return await func(message, *args, **kwargs)
-    
-    return wrapper
 
+    return wrapper
 
 def send_typing_action(func):
 
