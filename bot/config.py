@@ -1,46 +1,88 @@
 import os
-from dotenv import dotenv_values
+from dataclasses import dataclass
+from typing import Optional
+from dotenv import load_dotenv
 
-dotenv_values()
-
-TOKEN = os.getenv('TOKEN')
-TEST_TOKEN = os.getenv('TEST_TOKEN')
-API_KEY=os.getenv('API_KEY')
-# MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
-# MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
+# Загружаем переменные окружения из .env файла
+load_dotenv()
 
 
-HOST_MYSQL= os.getenv('HOST_MYSQL')
-PORT_MYSQL= os.getenv('PORT_MYSQL')
-USER_MYSQL= os.getenv('USER_MYSQL')
-PASSWORD_MYSQL= os.getenv('PASSWORD_MYSQL')
-DB_MYSQL= os.getenv('DB_MYSQL')
+@dataclass(frozen=True)
+class BotConfig:
+    """Конфигурация бота"""
 
-POSTGRES_USER=os.getenv('POSTGRES_USER')
-POSTGRES_PASSWORD=os.getenv('POSTGRES_PASSWORD')
-POSTGRES_DB=os.getenv('POSTGRES_DB')
-POSTGRES_HOST = os.getenv('POSTGRES_HOST')
-POSTGRES_PORT = os.getenv('POSTGRES_PORT')
-
-# mysql_config = {
-#     'host': HOST_MYSQL,
-#     'port': PORT_MYSQL,
-#     'user': USER_MYSQL,
-#     'password': PASSWORD_MYSQL,
-#     'database': DB_MYSQL
-# }
-
-# postgres_config = {
-#     'host': POSTGRES_HOST,
-#     'port': POSTGRES_PORT,
-#     'user': POSTGRES_USER,
-#     'password': POSTGRES_PASSWORD,
-#     'database': POSTGRES_DB
-# }
-
-loading_sticker = "CAACAgIAAxkBAAJMS2YHPrVKVmiyNhVR3J5vQE2Qpu-kAAIjAAMoD2oUJ1El54wgpAY0BA"
-
-WHISPER_API  = os.getenv('WHISPER_API')
+    token: str
+    test_token: str
+    api_key: str
+    whisper_api: str
+    utils_url: str
+    loading_sticker: str = (
+        "CAACAgIAAxkBAAJMS2YHPrVKVmiyNhVR3J5vQE2Qpu-kAAIjAAMoD2oUJ1El54wgpAY0BA"
+    )
 
 
-UTILS_URL = os.getenv('UTILS_URL')
+@dataclass(frozen=True)
+class DatabaseConfig:
+    """Конфигурация базы данных"""
+
+    # MySQL
+    mysql_host: Optional[str] = None
+    mysql_port: Optional[str] = None
+    mysql_user: Optional[str] = None
+    mysql_password: Optional[str] = None
+    mysql_db: Optional[str] = None
+
+    # PostgreSQL
+    postgres_host: Optional[str] = None
+    postgres_port: Optional[str] = None
+    postgres_user: Optional[str] = None
+    postgres_password: Optional[str] = None
+    postgres_db: Optional[str] = None
+
+
+def get_bot_config() -> BotConfig:
+    """Получить конфигурацию бота"""
+    required_vars = ["TOKEN", "TEST_TOKEN", "API_KEY", "WHISPER_API", "UTILS_URL"]
+    missing_vars = [var for var in required_vars if not os.getenv(var)]
+
+    if missing_vars:
+        raise ValueError(
+            f"Отсутствуют обязательные переменные окружения: {', '.join(missing_vars)}"
+        )
+
+    return BotConfig(
+        token=str(os.getenv("TOKEN")),
+        test_token=str(os.getenv("TEST_TOKEN")),
+        api_key=str(os.getenv("API_KEY")),
+        whisper_api=str(os.getenv("WHISPER_API")),
+        utils_url=str(os.getenv("UTILS_URL")),
+    )
+
+
+def get_database_config() -> DatabaseConfig:
+    """Получить конфигурацию базы данных"""
+    return DatabaseConfig(
+        mysql_host=os.getenv("HOST_MYSQL"),
+        mysql_port=os.getenv("PORT_MYSQL"),
+        mysql_user=os.getenv("USER_MYSQL"),
+        mysql_password=os.getenv("PASSWORD_MYSQL"),
+        mysql_db=os.getenv("DB_MYSQL"),
+        postgres_host=os.getenv("POSTGRES_HOST"),
+        postgres_port=os.getenv("POSTGRES_PORT"),
+        postgres_user=os.getenv("POSTGRES_USER"),
+        postgres_password=os.getenv("POSTGRES_PASSWORD"),
+        postgres_db=os.getenv("POSTGRES_DB"),
+    )
+
+
+# Глобальные экземпляры конфигурации
+bot_config = get_bot_config()
+db_config = get_database_config()
+
+# Обратная совместимость (для существующих импортов)
+TOKEN = bot_config.token
+TEST_TOKEN = bot_config.test_token
+API_KEY = bot_config.api_key
+WHISPER_API = bot_config.whisper_api
+UTILS_URL = bot_config.utils_url
+loading_sticker = bot_config.loading_sticker

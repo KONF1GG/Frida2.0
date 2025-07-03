@@ -1,57 +1,51 @@
-import aiohttp
-import asyncio
+"""
+Клиент для логирования сообщений пользователей.
+Отправляет логи в центральную систему для анализа.
+"""
+
 import logging
-from config import UTILS_URL
-from aiogram.types import Message
-from typing import Dict, Any, List, Literal, Optional
-import json
+from typing import List, Literal
+
+from .base import utils_client
 
 logger = logging.getLogger(__name__)
 
+
 async def log(
-    user_id: str,
+    user_id: int,
     query: str,
-    mistral_response: str,
+    ai_response: str,
     status: Literal[1, 0],
     hashes: List[str],
-):
-    params = {
-        "user_id": user_id,
-        "query": query,
-        "mistral_response": mistral_response,
-        "status": status,
-        "hashes": hashes,
-    }
+) -> bool:
+    """
+    Логирование сообщения пользователя
 
+    Args:
+        user_id: ID пользователя
+        query: Запрос пользователя
+        ai_response: Ответ AI
+        status: Статус обработки (1 - успех, 0 - ошибка)
+        hashes: Список хешей релевантных документов
+
+    Returns:
+        True в случае успешного логирования, False иначе
+    """
     try:
-        timeout = aiohttp.ClientTimeout(total=30)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(
-                f'{UTILS_URL}/v1/log',
-                json=params, 
-                headers={'Content-Type': 'application/json'} 
-            ) as response:
-                
-                if response.status == 200:
-                    return True
-                
-                elif response.status == 500:
-                    error_data = await response.json()
-                    logger.error(f"Log error: {error_data.get('error', 'Unknown error')}")
-                else:
-                    error_text = await response.text()
-                    logger.error(f"Unexpected status {response.status}: {error_text}")
-                
-                return None
-                    
-    except asyncio.TimeoutError:
-        logger.error(f"[Logger] Timeout while trying to reach {UTILS_URL}")
-        return None
-        
-    except aiohttp.ClientError as e:
-        logger.error(f"[Logger] Connection error: {e}")
-        return None
-        
+        response = await utils_client.log_message(
+            user_id=user_id,
+            query=query,
+            ai_response=ai_response,
+            status=status,
+            hashes=hashes,
+        )
+
+        if response.success:
+            return True
+        else:
+            logger.error(f"Log error: {response.error}")
+            return False
+
     except Exception as e:
-        logger.exception(f"[Logger] Unexpected error: {e}")
-        return None
+        logger.exception(f"Unexpected error in log: {e}")
+        return False
