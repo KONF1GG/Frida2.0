@@ -8,10 +8,10 @@ from aiogram import Router
 from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.filters import Command
 
-from api.auth import get_admins
-from api.loaddata import upload_wiki_data
-from utils.decorators import check_and_add_user, send_typing_action
-from config import bot_config
+from bot.api.auth import get_admins
+from bot.api.loaddata import upload_wiki_data
+from bot.utils.decorators import check_and_add_user, send_typing_action
+from bot.config import bot_config
 
 # Настройка логирования
 logger = logging.getLogger(__name__)

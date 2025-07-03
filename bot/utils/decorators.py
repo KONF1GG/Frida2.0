@@ -8,7 +8,7 @@ import logging
 from aiogram.types import Message
 from aiogram.enums.chat_action import ChatAction
 
-from api.auth import check_and_register_user
+from bot.api.auth import check_and_register_user
 
 logger = logging.getLogger(__name__)
 

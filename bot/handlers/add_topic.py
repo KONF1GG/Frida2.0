@@ -18,10 +18,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command, StateFilter
 from aiogram.exceptions import TelegramBadRequest
 
-from utils.decorators import check_and_add_user, send_typing_action
-from utils.helpers import process_document
-from utils.states import AddTopicForm
-from api.loaddata import LoadDataClient
+from bot.utils.decorators import check_and_add_user, send_typing_action
+from bot.utils.helpers import process_document
+from bot.utils.states import AddTopicForm
+from bot.api.loaddata import LoadDataClient
 
 # Настройка логирования
 logger = logging.getLogger(__name__)

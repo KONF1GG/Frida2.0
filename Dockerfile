@@ -7,4 +7,4 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt --no-cache-dir
 RUN pip install "numpy<2.0"
 
-CMD ["python3", "main.py"]
+CMD ["python", "-m", "bot.main"]

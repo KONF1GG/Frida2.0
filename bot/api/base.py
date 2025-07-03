@@ -10,7 +10,7 @@ from abc import ABC
 from typing import List, Literal, Optional, Dict, Any
 from dataclasses import dataclass
 
-from config import bot_config
+from bot.config import bot_config
 
 logger = logging.getLogger(__name__)
 

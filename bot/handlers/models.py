@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.exceptions import TelegramBadRequest
 import logging
-from utils.user_settings import MODEL_MAPPING, user_model
+from bot.utils.user_settings import MODEL_MAPPING, user_model
 
 # Настройка логирования
 logger = logging.getLogger(__name__)

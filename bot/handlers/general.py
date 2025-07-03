@@ -8,11 +8,11 @@ from aiogram import Router
 from aiogram.types import Message
 from aiogram.enums import ParseMode
 
-from utils.decorators import check_and_add_user, send_typing_action
-from config import bot_config
-from api.milvus import search_milvus
+from bot.utils.decorators import check_and_add_user, send_typing_action
+from bot.config import bot_config
+from bot.api.milvus import search_milvus
 from bot.api.ai import call_ai
-from api.log import log
+from bot.api.log import log
 from bot.handlers.models import user_model
 
 # Настройка логирования

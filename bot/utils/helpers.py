@@ -12,11 +12,11 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from aiogram.enums import ParseMode
 
-from config import bot_config
-from api.milvus import search_milvus
+from bot.config import bot_config
+from bot.api.milvus import search_milvus
 from bot.api.ai import call_ai
-from api.log import log
-from utils.user_settings import user_model
+from bot.api.log import log
+from bot.utils.user_settings import user_model
 
 logger = logging.getLogger(__name__)
 

@@ -9,9 +9,9 @@ from aiogram import Router
 from aiogram.types import Message
 from aiogram.enums import ContentType
 
-from utils.decorators import check_and_add_user, send_typing_action
-from utils.helpers import check_transcription_status
-from config import bot_config
+from bot.utils.decorators import check_and_add_user, send_typing_action
+from bot.utils.helpers import check_transcription_status
+from bot.config import bot_config
 
 # Настройка логирования
 logger = logging.getLogger(__name__)

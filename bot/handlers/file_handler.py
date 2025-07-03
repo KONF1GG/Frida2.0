@@ -10,8 +10,8 @@ from aiogram.types import Message
 import pandas as pd
 import chardet
 
-from utils.decorators import check_and_add_user, send_typing_action
-from config import bot_config
+from bot.utils.decorators import check_and_add_user, send_typing_action
+from bot.config import bot_config
 from bot.api.ai import call_ai
 from bot.handlers.models import user_model
 

@@ -14,9 +14,9 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.types import BotCommand
 
-from handlers import register_all_handlers
-from config import bot_config
-from utils.logger import setup_logger
+from bot.handlers import register_all_handlers
+from bot.config import bot_config
+from bot.utils.logger import setup_logger
 
 # Настройка логирования
 logger = setup_logger(__name__)

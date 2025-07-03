@@ -8,7 +8,7 @@ from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
-from utils.decorators import check_and_add_user, send_typing_action
+from bot.utils.decorators import check_and_add_user, send_typing_action
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
