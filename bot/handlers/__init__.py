@@ -10,21 +10,21 @@ from .voice_handler import router as voice_router
 from .general import router as general_router
 from .loaddata import router as loaddata_router
 from .models import router as model_router
-
+from .inline_mode import router as inline_router
+from .tariff_handler import router as tariff_router
 from aiogram import Dispatcher
 
 
 def register_all_handlers(dp: Dispatcher):
     """
     Регистрация всех обработчиков в диспетчере
-
-    Важно: порядок регистрации имеет значение!
-    Более специфичные обработчики должны быть зарегистрированы первыми.
     """
     # Команды (самый высокий приоритет)
     dp.include_router(start_router)
     dp.include_router(loaddata_router)
     dp.include_router(add_topic_router)
+    dp.include_router(inline_router)
+    dp.include_router(tariff_router)
 
     # Специфичные типы контента
     dp.include_router(file_router)

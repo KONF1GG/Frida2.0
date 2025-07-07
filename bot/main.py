@@ -45,10 +45,11 @@ class BotApplication:
             raise RuntimeError("Бот не инициализирован")
 
         commands = [
-            BotCommand(command="start", description="Запуск бота"),
-            BotCommand(command="loaddata", description="Выгрузить данные Вики"),
-            BotCommand(command="addtopic", description="Добавить контекст"),
-            BotCommand(command="model", description="Выбрать AI модель"),
+            BotCommand(command="start", description="🚀 Запуск бота"),
+            BotCommand(command="loaddata", description="📦 Выгрузить данные Вики"),
+            BotCommand(command="addtopic", description="📝 Добавить контекст"),
+            BotCommand(command="model", description="🤖 Выбрать AI модель"),
+            BotCommand(command="tariff", description="🔎 Вопрос по тарифам"),
         ]
 
         try:

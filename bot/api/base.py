@@ -220,6 +220,13 @@ class UtilsAPIClient(BaseAPIClient):
         """Получение списка администраторов"""
         return await self.get("v1/admins")
 
+    async def get_addresses_from_redis(self, query_address: str) -> APIResponse:
+        """Получение списка адресов"""
+        return await self.get("redis_addresses", params={'query_address': query_address})
+    
+    async def get_tariffs_from_redis(self, territory_id: str) -> APIResponse:
+        """Получение тарифов для определенного territory_id"""
+        return await self.get('redis_tariffs', params={'territory_id': territory_id})
 
 # Глобальный экземпляр клиента
 utils_client = UtilsAPIClient()

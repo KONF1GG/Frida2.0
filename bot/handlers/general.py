@@ -4,9 +4,10 @@
 """
 
 import logging
-from aiogram import Router
+from aiogram import  Router
 from aiogram.types import Message
 from aiogram.enums import ParseMode
+from aiogram.fsm.context import FSMContext
 
 from bot.utils.decorators import check_and_add_user, send_typing_action
 from bot.config import bot_config
@@ -14,6 +15,7 @@ from bot.api.milvus import search_milvus
 from bot.api.ai import call_ai
 from bot.api.log import log
 from bot.handlers.models import user_model
+from bot.handlers.tariff_handler import TariffQuestionForm
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
@@ -24,10 +26,16 @@ router = Router()
 @router.message()
 @check_and_add_user
 @send_typing_action
-async def message_handler(message: Message):
-    """Обработка обычных сообщений пользователей."""
+async def message_handler(message: Message, state: FSMContext):
+    """Обработка обычных сообщений пользователей с отображением модели."""
     if not message.text or not message.from_user:
         logger.warning("Получено сообщение без текста или пользователя")
+        return
+
+    # Проверяем, не находится ли пользователь в тарифном режиме
+    current_state = await state.get_state()
+    if current_state in [TariffQuestionForm.waiting_for_question, TariffQuestionForm.in_tariff_mode]:
+        # Если пользователь в тарифном режиме, не обрабатываем здесь
         return
 
     user_id = message.from_user.id

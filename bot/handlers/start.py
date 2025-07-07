@@ -41,3 +41,4 @@ async def command_start_handler(message: Message):
         logger.info(f"Пользователь {message.from_user.id} ({user_name}) запустил бота")
     except Exception as e:
         logger.error(f"Ошибка при отправке приветственного сообщения: {e}")
+
