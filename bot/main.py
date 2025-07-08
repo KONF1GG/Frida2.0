@@ -34,7 +34,7 @@ class BotApplication:
         """Создание экземпляра бота"""
         session = AiohttpSession()
         return Bot(
-            token=bot_config.token,
+            token=bot_config.test_token,
             default=DefaultBotProperties(parse_mode=ParseMode.HTML),
             session=session,
         )
@@ -46,10 +46,11 @@ class BotApplication:
 
         commands = [
             BotCommand(command="start", description="🚀 Запуск бота"),
-            BotCommand(command="loaddata", description="📦 Выгрузить данные Вики"),
-            BotCommand(command="addtopic", description="📝 Добавить контекст"),
+            BotCommand(command="help", description="📋 Список команд"),
             BotCommand(command="model", description="🤖 Выбрать AI модель"),
             BotCommand(command="tariff", description="🔎 Вопрос по тарифам"),
+            BotCommand(command="addtopic", description="📝 Добавить контекст"),
+            BotCommand(command="loaddata", description="📦 Выгрузить данные Вики"),
         ]
 
         try:

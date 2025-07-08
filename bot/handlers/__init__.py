@@ -12,6 +12,7 @@ from .loaddata import router as loaddata_router
 from .models import router as model_router
 from .inline_mode import router as inline_router
 from .tariff_handler import router as tariff_router
+from .help import router as help_router
 from aiogram import Dispatcher
 
 
@@ -25,6 +26,7 @@ def register_all_handlers(dp: Dispatcher):
     dp.include_router(add_topic_router)
     dp.include_router(inline_router)
     dp.include_router(tariff_router)
+    dp.include_router(help_router)
 
     # Специфичные типы контента
     dp.include_router(file_router)
