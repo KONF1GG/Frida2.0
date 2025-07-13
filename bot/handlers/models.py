@@ -3,6 +3,7 @@ from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.exceptions import TelegramBadRequest
 import logging
+from bot.utils.decorators import check_and_add_user, send_typing_action
 from bot.utils.user_settings import MODEL_MAPPING, user_model
 
 # Настройка логирования
@@ -29,6 +30,8 @@ def _get_model_keyboard(current: str) -> InlineKeyboardMarkup:
 
 
 @router.message(Command("model"))
+@check_and_add_user
+@send_typing_action
 async def command_model(message: Message):
     """Обработчик команды /model"""
     if not message or not message.from_user:
@@ -43,6 +46,8 @@ async def command_model(message: Message):
 
 
 @router.callback_query(F.data.startswith("set_model:"))
+@check_and_add_user
+@send_typing_action
 async def callback_set_model(call: CallbackQuery):
     """Установка выбранной модели"""
     if not call or not call.data:

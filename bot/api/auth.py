@@ -43,6 +43,14 @@ async def check_and_register_user(
         if response.success:
             logger.info(f"User {user_id} checked/added successfully.")
             return True
+        elif response.status_code == 403:
+            if message:
+                await message.answer(
+                    "Кажется, вы не являетесь сотрудником компании Фридом. "
+                    'Если это не так, обратитесь, пожалуйста, к <a href="https://t.me/Leontykro">@Leontykro</a>.',
+                    parse_mode="HTML",
+                )
+            return False
         else:
             logger.error(f"Auth error: {response.error}")
             if message:

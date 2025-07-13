@@ -8,6 +8,7 @@ from bot.api.base import utils_client
 from bot.config import bot_config
 
 from bot.api.ai import call_ai
+from bot.utils.decorators import check_and_add_user, send_typing_action
 from bot.utils.user_settings import user_model
 
 # Настройка логирования
@@ -20,6 +21,8 @@ class TariffQuestionForm(StatesGroup):
     in_tariff_mode = State() 
 
 @router.message(F.text.startswith("terId"))
+@check_and_add_user
+@send_typing_action
 async def handle_tariff_message(message: Message, state: FSMContext):
     try:
         await message.delete()
@@ -71,6 +74,8 @@ async def handle_tariff_message(message: Message, state: FSMContext):
     await state.set_state(TariffQuestionForm.waiting_for_question)
 
 @router.callback_query(F.data == "cancel_tariff_question")
+@check_and_add_user
+@send_typing_action
 async def cancel_tariff_question(callback, state: FSMContext):
     await state.clear()
     await callback.answer("Отменено")
@@ -177,6 +182,8 @@ async def process_tariff_question(message: Message, state: FSMContext):
             logger.warning(f"Не удалось удалить loading message: {delete_error}")
 
 @router.callback_query(F.data == "continue_tariff")
+@check_and_add_user
+@send_typing_action
 async def continue_tariff_mode(callback, state: FSMContext):
     await callback.answer("Продолжаем в тарифном режиме")
     await callback.message.edit_text(
@@ -186,6 +193,8 @@ async def continue_tariff_mode(callback, state: FSMContext):
     await state.set_state(TariffQuestionForm.in_tariff_mode)
 
 @router.callback_query(F.data == "switch_to_general")
+@check_and_add_user
+@send_typing_action
 async def switch_to_general_mode(callback, state: FSMContext):
     await state.clear()
     await callback.answer("Переключено в обычный режим")
@@ -197,6 +206,8 @@ async def switch_to_general_mode(callback, state: FSMContext):
     )
 
 @router.callback_query(F.data == "end_conversation")
+@check_and_add_user
+@send_typing_action
 async def end_conversation(callback, state: FSMContext):
     await state.clear()
     await callback.answer("Разговор завершен")

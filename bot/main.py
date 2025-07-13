@@ -34,7 +34,7 @@ class BotApplication:
         """Создание экземпляра бота"""
         session = AiohttpSession()
         return Bot(
-            token=bot_config.token,
+            token=bot_config.test_token,
             default=DefaultBotProperties(parse_mode=ParseMode.HTML),
             session=session,
         )

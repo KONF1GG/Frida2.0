@@ -5,6 +5,7 @@ from aiogram import Router
 from aiogram.types import InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from bot.api.base import utils_client
+from bot.utils.decorators import check_and_add_user, send_typing_action
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
@@ -12,6 +13,8 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 @router.message(Command("tariff"))
+@check_and_add_user
+@send_typing_action
 async def inline_hint(message: Message):
     bot_username = (await message.bot.me()).username
     keyboard = InlineKeyboardMarkup(
@@ -32,6 +35,8 @@ async def inline_hint(message: Message):
 
 
 @router.inline_query()
+@check_and_add_user
+@send_typing_action
 async def inline_address_search(inline_query: InlineQuery):
     query = inline_query.query.strip()
     if not query:

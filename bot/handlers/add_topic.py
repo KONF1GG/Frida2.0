@@ -142,6 +142,8 @@ async def start_add_topic(message: Message, state: FSMContext) -> None:
 @router.callback_query(
     F.data == "addtopic_manual", StateFilter(AddTopicForm.waiting_for_method)
 )
+@check_and_add_user
+@send_typing_action
 async def process_manual_input(callback: CallbackQuery, state: FSMContext) -> None:
     """Обработка выбора ручного ввода"""
     await callback.answer()
@@ -158,6 +160,8 @@ async def process_manual_input(callback: CallbackQuery, state: FSMContext) -> No
 @router.callback_query(
     F.data == "addtopic_file", StateFilter(AddTopicForm.waiting_for_method)
 )
+@check_and_add_user
+@send_typing_action
 async def process_file_input(callback: CallbackQuery, state: FSMContext) -> None:
     """Обработка выбора загрузки файла"""
     await callback.answer()
@@ -175,6 +179,8 @@ async def process_file_input(callback: CallbackQuery, state: FSMContext) -> None
 
 
 @router.message(StateFilter(AddTopicForm.waiting_for_title), F.text)
+@check_and_add_user
+@send_typing_action
 async def process_title_input(message: Message, state: FSMContext) -> None:
     """Обработка ввода заголовка"""
     if not message.from_user or not message.text:
@@ -207,6 +213,8 @@ async def process_title_input(message: Message, state: FSMContext) -> None:
 
 
 @router.message(StateFilter(AddTopicForm.waiting_for_content), F.text)
+@check_and_add_user
+@send_typing_action
 async def process_content_input(message: Message, state: FSMContext) -> None:
     """Обработка ввода содержимого"""
     if not message.from_user or not message.text:
@@ -294,6 +302,8 @@ async def process_file_upload(message: Message, state: FSMContext) -> None:
 @router.callback_query(
     F.data == "addtopic_confirm", StateFilter(AddTopicForm.waiting_for_confirmation)
 )
+@check_and_add_user
+@send_typing_action
 async def confirm_upload(callback: CallbackQuery, state: FSMContext) -> None:
     """Подтверждение и загрузка контента"""
     if not callback.from_user:
@@ -348,6 +358,8 @@ async def confirm_upload(callback: CallbackQuery, state: FSMContext) -> None:
 
 
 @router.callback_query(F.data == "addtopic_cancel", StateFilter("*"))
+@check_and_add_user
+@send_typing_action
 async def cancel_add_topic(callback: CallbackQuery, state: FSMContext) -> None:
     """Отмена добавления темы"""
     try:
@@ -371,6 +383,8 @@ async def cancel_add_topic(callback: CallbackQuery, state: FSMContext) -> None:
 @router.callback_query(
     F.data == "addtopic_edit_title", StateFilter(AddTopicForm.waiting_for_confirmation)
 )
+@check_and_add_user
+@send_typing_action
 async def edit_title_stub(callback: CallbackQuery, state: FSMContext) -> None:
     """Заглушка для редактирования заголовка"""
     await callback.answer()
@@ -392,6 +406,8 @@ async def edit_title_stub(callback: CallbackQuery, state: FSMContext) -> None:
 
 # для обработки нового заголовка
 @router.message(StateFilter(AddTopicForm.waiting_for_title_edit), F.text)
+@check_and_add_user
+@send_typing_action
 async def process_title_edit(message: Message, state: FSMContext) -> None:
     """Обработка нового заголовка"""
     if not message.from_user or not message.text:
