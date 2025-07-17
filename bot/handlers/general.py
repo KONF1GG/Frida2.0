@@ -4,8 +4,8 @@
 """
 
 import logging
-from aiogram import  Router
-from aiogram.types import Message
+from aiogram import Router
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 
@@ -16,11 +16,50 @@ from bot.api.ai import call_ai
 from bot.api.log import log
 from bot.handlers.models import user_model
 from bot.handlers.tariff_handler import TariffQuestionForm
+from aiogram import F
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
 
 router = Router()
+
+
+@router.message(F.text.startswith("@"))
+@check_and_add_user
+@send_typing_action
+async def handle_at_message(message: Message, state: FSMContext):
+    """Обработка сообщений, начинающихся с @"""
+    if not message.text or not message.from_user:
+        logger.warning("Получено сообщение без текста или пользователя")
+        return
+
+    # Получаем username бота для создания кнопки
+    try:
+        bot_info = await message.bot.me()  # type: ignore
+        bot_username = bot_info.username if bot_info and bot_info.username else "bot"
+    except Exception:
+        bot_username = "bot"
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🔎 Начать поиск тарифов", switch_inline_query_current_chat=""
+                )
+            ]
+        ]
+    )
+
+    await message.answer(
+        "🤔 <b>Похоже, вы пытались воспользоваться инлайн-режимом для поиска тарифов!</b>\n\n"
+        "📋 <i>Для корректной работы необходимо:</i>\n"
+        "1️⃣ Нажать кнопку ниже для входа в инлайн-режим\n"
+        "2️⃣ Выбрать нужный адрес из выпадающего списка\n"
+        "3️⃣ После выбора адреса задать свой вопрос\n\n"
+        f"Нажмите кнопку ниже — в строке ввода появится <code>@{bot_username} </code> и вы сможете сразу ввести адрес для поиска информации по тарифам.",
+        reply_markup=keyboard,
+        parse_mode="HTML",
+    )
 
 
 @router.message()
@@ -34,7 +73,10 @@ async def message_handler(message: Message, state: FSMContext):
 
     # Проверяем, не находится ли пользователь в тарифном режиме
     current_state = await state.get_state()
-    if current_state in [TariffQuestionForm.waiting_for_question, TariffQuestionForm.in_tariff_mode]:
+    if current_state in [
+        TariffQuestionForm.waiting_for_question,
+        TariffQuestionForm.in_tariff_mode,
+    ]:
         # Если пользователь в тарифном режиме, не обрабатываем здесь
         return
 

@@ -109,7 +109,15 @@ class BaseAPIClient(ABC):
                     except aiohttp.ContentTypeError:
                         error_msg = await response.text()
 
-                    logger.error(f"API error {status_code}: {error_msg}")
+                    # Для 404 ошибок в поиске адресов используем debug уровень
+                    if status_code == 404 and "redis_addresses" in url:
+                        query_param = (
+                            params.get("query_address", "N/A") if params else "N/A"
+                        )
+                        logger.debug(f"Адрес не найден для запроса: {query_param}")
+                    else:
+                        logger.error(f"API error {status_code}: {error_msg}")
+
                     return APIResponse(
                         success=False, error=error_msg, status_code=status_code
                     )
@@ -184,7 +192,12 @@ class UtilsAPIClient(BaseAPIClient):
         )
 
     async def log_message(
-        self, user_id: int, query: str, ai_response: str, status: Literal[1, 0], hashes: List[str]
+        self,
+        user_id: int,
+        query: str,
+        ai_response: str,
+        status: Literal[1, 0],
+        hashes: List[str],
     ) -> APIResponse:
         """Логирование сообщения"""
         return await self.post(
@@ -222,11 +235,14 @@ class UtilsAPIClient(BaseAPIClient):
 
     async def get_addresses_from_redis(self, query_address: str) -> APIResponse:
         """Получение списка адресов"""
-        return await self.get("redis_addresses", params={'query_address': query_address})
-    
+        return await self.get(
+            "redis_addresses", params={"query_address": query_address}
+        )
+
     async def get_tariffs_from_redis(self, territory_id: str) -> APIResponse:
         """Получение тарифов для определенного territory_id"""
-        return await self.get('redis_tariffs', params={'territory_id': territory_id})
+        return await self.get("redis_tariffs", params={"territory_id": territory_id})
+
 
 # Глобальный экземпляр клиента
 utils_client = UtilsAPIClient()

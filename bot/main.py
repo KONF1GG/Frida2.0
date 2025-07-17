@@ -60,18 +60,6 @@ class BotApplication:
             logger.error(f"Ошибка при установке команд: {e}")
             raise
 
-    async def _setup_signal_handlers(self) -> None:
-        """Настройка обработчиков сигналов для graceful shutdown"""
-        if sys.platform != "win32":
-            loop = asyncio.get_running_loop()
-            for sig in (signal.SIGTERM, signal.SIGINT):
-                loop.add_signal_handler(sig, self._signal_handler)
-
-    def _signal_handler(self) -> None:
-        """Обработчик сигналов завершения"""
-        logger.info("Получен сигнал завершения")
-        self._shutdown_event.set()
-
     async def startup(self) -> None:
         """Инициализация приложения"""
         logger.info("Запуск бота Frida...")
@@ -88,9 +76,6 @@ class BotApplication:
             # Настройка команд
             await self._setup_commands()
 
-            # Настройка обработчиков сигналов
-            await self._setup_signal_handlers()
-
             logger.info("Бот успешно инициализирован")
 
         except Exception as e:
@@ -102,9 +87,21 @@ class BotApplication:
         logger.info("Начало процедуры завершения работы...")
 
         try:
+            # Сначала останавливаем диспетчер
+            if self.dp:
+                try:
+                    await self.dp.stop_polling()
+                    logger.info("Диспетчер остановлен")
+                except Exception as e:
+                    logger.warning(f"Ошибка при остановке диспетчера: {e}")
+
+            # Затем закрываем сессию бота
             if self.bot:
-                await self.bot.session.close()
-                logger.info("Сессия бота закрыта")
+                try:
+                    await self.bot.session.close()
+                    logger.info("Сессия бота закрыта")
+                except Exception as e:
+                    logger.warning(f"Ошибка при закрытии сессии бота: {e}")
 
             logger.info("Завершение работы выполнено успешно")
 
@@ -119,23 +116,35 @@ class BotApplication:
             if not self.dp or not self.bot:
                 raise RuntimeError("Бот или диспетчер не инициализированы")
 
-            # Запуск polling в отдельной задаче
-            polling_task = asyncio.create_task(
-                self.dp.start_polling(self.bot, skip_updates=True)
-            )
-
             logger.info("Бот запущен в режиме polling")
 
-            # Ожидание сигнала завершения
-            await self._shutdown_event.wait()
+            # Создаем задачу для polling
+            polling_task = asyncio.create_task(
+                self.dp.start_polling(
+                    self.bot,
+                    skip_updates=True,
+                    handle_signals=False,  # Мы сами обрабатываем сигналы
+                )
+            )
 
-            # Остановка polling
-            polling_task.cancel()
-            try:
-                await polling_task
-            except asyncio.CancelledError:
-                logger.info("Polling остановлен")
+            # Ждем либо завершения polling, либо сигнала завершения
+            done, pending = await asyncio.wait(
+                [polling_task, asyncio.create_task(self._shutdown_event.wait())],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
 
+            # Отменяем оставшиеся задачи
+            for task in pending:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+
+            logger.info("Polling завершен")
+
+        except asyncio.CancelledError:
+            logger.info("Polling был отменен")
         except Exception as e:
             logger.error(f"Критическая ошибка: {e}")
             raise
@@ -147,12 +156,27 @@ async def main() -> None:
     """Основная функция запуска приложения"""
     app = BotApplication()
 
+    def signal_handler():
+        logger.info("Получен сигнал прерывания")
+        app._shutdown_event.set()
+
+    # Настройка обработчиков сигналов
+    if sys.platform != "win32":
+        try:
+            loop = asyncio.get_running_loop()
+            for sig in (signal.SIGTERM, signal.SIGINT):
+                loop.add_signal_handler(sig, signal_handler)
+        except Exception as e:
+            logger.warning(f"Не удалось установить обработчики сигналов: {e}")
+
     try:
         await app.run()
     except KeyboardInterrupt:
         logger.info("Получен сигнал прерывания от пользователя")
+        app._shutdown_event.set()
     except Exception as e:
         logger.error(f"Неожиданная ошибка: {e}")
+        app._shutdown_event.set()
         sys.exit(1)
     finally:
         logger.info("Бот остановлен")
@@ -160,6 +184,10 @@ async def main() -> None:
 
 if __name__ == "__main__":
     try:
+        # Для Windows используем ProactorEventLoop для лучшей совместимости
+        if sys.platform == "win32":
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
         asyncio.run(main())
     except KeyboardInterrupt:
         print("\nБот остановлен пользователем")
