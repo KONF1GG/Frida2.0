@@ -239,6 +239,10 @@ class UtilsAPIClient(BaseAPIClient):
             "redis_addresses", params={"query_address": query_address}
         )
 
+    async def get_address_by_id(self, address_id: str) -> APIResponse:
+        """Получение адреса по ID"""
+        return await self.get("redis_address_by_id", params={"address_id": address_id})
+
     async def get_tariffs_from_redis(self, territory_id: str) -> APIResponse:
         """Получение тарифов для определенного territory_id"""
         return await self.get("redis_tariffs", params={"territory_id": territory_id})
