@@ -309,11 +309,17 @@ async def classify_and_process_query(
 
         # Создаем промпт для классификации
         classification_prompt = f"""
-        Определи категорию следующего запроса пользователя. Доступные категории: {", ".join(categories)}.
+        Определи категорию следующего запроса пользователя и извлеки адрес, если он есть.
+        
+        Доступные категории: {", ".join(categories)}.
         
         Запрос: "{user_query}"
         
-        Верни только название категории из списка: {", ".join(categories)}
+        Верни ответ в следующем формате:
+        Категория: [название категории]
+        Адрес: [извлеченный адрес или "не найден"]
+
+        Если в запросе есть упоминание адреса (улица, дом, населенный пункт, регион, сокращения по типу: ул., д., г., обл., р-н, снт, кв., корп., стр., мкр., пр., ш., пер., пл.), обязательно извлеки его.
         """
 
         # Классифицируем запрос
@@ -332,10 +338,12 @@ async def classify_and_process_query(
             await _handle_general_query(user_query, user_id, message)
             return
 
-        # Определяем категорию
+        # Определяем категорию и извлекаем адрес
         category = None
+        extracted_address = None
         classification_lower = classification_result.lower().strip()
 
+        # Парсим категорию
         if "тариф" in classification_lower:
             category = "Тарифы"
         elif "общий" in classification_lower:
@@ -343,11 +351,22 @@ async def classify_and_process_query(
         else:
             category = "Общий"
 
-        logger.info(f"Запрос пользователя {user_id} классифицирован как: {category}")
+        # Парсим адрес из ответа LLM
+        lines = classification_result.split("\n")
+        for line in lines:
+            if "адрес:" in line.lower():
+                address_part = line.split(":", 1)[1].strip()
+                if address_part and address_part.lower() != "не найден":
+                    extracted_address = address_part
+                break
+
+        logger.info(
+            f"Запрос пользователя {user_id} классифицирован как: {category}, извлеченный адрес: {extracted_address}"
+        )
 
         # Обрабатываем запрос в зависимости от категории
         if category == "Тарифы":
-            await _handle_tariff_query(user_query, user_id, message)
+            await _handle_tariff_query(user_query, user_id, message, extracted_address)
         else:
             await _handle_general_query(user_query, user_id, message)
 
@@ -358,15 +377,29 @@ async def classify_and_process_query(
         await _handle_general_query(user_query, user_id, message)
 
 
-async def _handle_tariff_query(user_query: str, user_id: int, message: Message) -> None:
+async def _handle_tariff_query(
+    user_query: str,
+    user_id: int,
+    message: Message,
+    extracted_address: str | None = None,
+) -> None:
     """
     Обрабатывает запрос категории 'Тарифы'
     """
     try:
-        # Ищем адрес в запросе
+        # Ищем адрес в запросе через микросервис
         house_id = await _extract_address_from_query(user_query)
 
         if not house_id:
+            # Если микросервис не нашел house_id, но у нас есть извлеченный адрес из LLM
+            if extracted_address:
+                logger.info(
+                    f"Микросервис не нашел house_id, используем извлеченный адрес: {extracted_address}"
+                )
+                await _handle_tariff_via_redis_addresses(
+                    user_query, user_id, message, extracted_address
+                )
+                return
             # Адрес не найден, просим пользователя указать адрес
             await message.answer(
                 "🏠 Для получения информации о тарифах необходимо указать адрес.\n\n"
@@ -773,3 +806,136 @@ async def _extract_address_from_query(user_query: str) -> str | None:
     except Exception as e:
         logger.exception(f"Ошибка при извлечении адреса из запроса '{user_query}': {e}")
         return None
+
+
+async def _handle_tariff_via_redis_addresses(
+    user_query: str, user_id: int, message: Message, extracted_address: str
+) -> None:
+    """
+    Обрабатывает тарифный запрос через redis_addresses (как в команде /tariff)
+    """
+    try:
+        # Ищем адреса через redis_addresses
+        api_response = await utils_client.get_addresses_from_redis(extracted_address)
+
+        if not api_response.success or not api_response.data:
+            await message.answer(
+                "❌ Не удалось найти адреса по указанному запросу. "
+                "Попробуйте уточнить адрес или воспользуйтесь командой /tariff",
+                parse_mode=ParseMode.HTML,
+            )
+            await log(
+                user_id=user_id,
+                query=user_query,
+                ai_response="Адреса не найдены через redis_addresses",
+                status=0,
+                hashes=[],
+            )
+            return
+
+        addresses = api_response.data.get("addresses")
+        if not isinstance(addresses, list) or not addresses:
+            await message.answer(
+                "❌ Не найдено адресов по вашему запросу. "
+                "Попробуйте уточнить адрес или воспользуйтесь командой /tariff",
+                parse_mode=ParseMode.HTML,
+            )
+            await log(
+                user_id=user_id,
+                query=user_query,
+                ai_response="Пустой список адресов",
+                status=0,
+                hashes=[],
+            )
+            return
+
+        # Берем первый найденный адрес
+        first_address = addresses[0]
+        territory_id = first_address.get("territory_id")
+        territory_name = first_address.get("territory_name", "")
+
+        if not territory_id:
+            await message.answer(
+                "❌ Не удалось получить данные территории для найденного адреса.",
+                parse_mode=ParseMode.HTML,
+            )
+            await log(
+                user_id=user_id,
+                query=user_query,
+                ai_response="Territory ID не найден в первом адресе",
+                status=0,
+                hashes=[],
+            )
+            return
+
+        # Получаем тарифы для территории
+        tariffs_response = await utils_client.get_tariffs_from_redis(territory_id)
+
+        if not tariffs_response.success or not tariffs_response.data:
+            await message.answer(
+                "❌ Не удалось найти информацию о тарифах для данного адреса. "
+                "Возможно, услуги на этой территории пока недоступны.",
+                parse_mode=ParseMode.HTML,
+            )
+            await log(
+                user_id=user_id,
+                query=user_query,
+                ai_response="Тарифы не найдены для territory_id из redis_addresses",
+                status=0,
+                hashes=[],
+            )
+            return
+
+        # Генерируем ответ с информацией о тарифах
+        tariff_info = tariffs_response.data
+        tariff_context = f"Информация о тарифах для территории {territory_id} ({territory_name}):\n{str(tariff_info)}"
+
+        selected_model = user_model.get(user_id, "mistral-large-latest")
+        ai_response = await call_ai(
+            text=user_query,
+            combined_context=tariff_context,
+            chat_history="",
+            model=selected_model,
+        )
+
+        if ai_response:
+            status_bar = f"📍 <b>{territory_name}</b>\n\n"
+
+            await message.answer(status_bar + ai_response, parse_mode=ParseMode.HTML)
+
+            await log(
+                user_id=user_id,
+                query=user_query,
+                ai_response=ai_response,
+                status=1,
+                hashes=[],
+            )
+            logger.info(
+                f"Успешно обработан тарифный запрос через redis_addresses для пользователя {user_id}"
+            )
+        else:
+            error_msg = (
+                "⚠️ Произошла ошибка при обработке вопроса о тарифах. Попробуйте позже."
+            )
+            await message.answer(error_msg, parse_mode=ParseMode.HTML)
+            await log(
+                user_id=user_id,
+                query=user_query,
+                ai_response=error_msg,
+                status=0,
+                hashes=[],
+            )
+
+    except Exception as e:
+        logger.exception(
+            f"Ошибка при обработке тарифного запроса через redis_addresses для пользователя {user_id}: {e}"
+        )
+        error_msg = "❌ Произошла ошибка при обработке запроса о тарифах."
+        await message.answer(error_msg, parse_mode=ParseMode.HTML)
+        await log(
+            user_id=user_id,
+            query=user_query,
+            ai_response=str(e),
+            status=0,
+            hashes=[],
+        )
