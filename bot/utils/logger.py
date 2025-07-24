@@ -58,21 +58,49 @@ def setup_logger(
     return logger
 
 
-def setup_root_logger(level: int = logging.INFO) -> None:
+def setup_root_logger(level: int = logging.DEBUG) -> None:
     """
     Настройка корневого логгера для всего приложения
 
     Args:
         level: Уровень логирования
     """
+    # Очищаем существующие обработчики
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+
+    # Настройка базового логирования
     logging.basicConfig(
         level=level,
         format="%(asctime)s | %(name)s | %(levelname)s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[logging.StreamHandler(sys.stdout)],
+        force=True,  # Принудительно перенастраиваем
     )
 
-    # Отключаем избыточное логирование внешних библиотек
-    logging.getLogger("aiogram").setLevel(logging.WARNING)
+    # Настройка уровней для внешних библиотек
+    logging.getLogger("aiogram").setLevel(
+        logging.INFO
+    )  # Показываем некоторые логи aiogram
     logging.getLogger("aiohttp").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
+
+    # Устанавливаем DEBUG для нашего бота
+    logging.getLogger("bot").setLevel(logging.DEBUG)
+
+    print(f"🔧 Логирование настроено на уровень: {logging.getLevelName(level)}")
+
+
+def get_logger(name: str) -> logging.Logger:
+    """
+    Получить логгер с правильной настройкой
+
+    Args:
+        name: Имя логгера
+
+    Returns:
+        Настроенный логгер
+    """
+    return logging.getLogger(name)

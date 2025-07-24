@@ -9,6 +9,7 @@ from bot.api.base import utils_client
 from bot.config import bot_config
 
 from bot.api.ai import call_ai
+from bot.api.log import log
 from bot.utils.decorators import check_and_add_user, send_typing_action
 from bot.utils.user_settings import user_model
 
@@ -144,6 +145,16 @@ async def process_tariff_question(message: Message, state: FSMContext):
 
             await message.answer(status_bar + ai_response, parse_mode="HTML")
 
+            # Логируем успешный ответ
+            await log(
+                user_id=message.from_user.id,
+                query=message.text,
+                ai_response=ai_response,
+                status=1,
+                hashes=[],
+                category="Тарифы",
+            )
+
             keyboard = InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
@@ -175,8 +186,19 @@ async def process_tariff_question(message: Message, state: FSMContext):
                 f"Успешно обработан тарифный запрос пользователя {message.from_user.id}"
             )
         else:
-            await message.answer(
+            error_msg = (
                 "⚠️ Произошла ошибка при обработке вашего вопроса. Попробуйте позже."
+            )
+            await message.answer(error_msg)
+
+            # Логируем ошибку
+            await log(
+                user_id=message.from_user.id,
+                query=message.text,
+                ai_response=error_msg,
+                status=0,
+                hashes=[],
+                category="Тарифы",
             )
 
     except Exception as e:

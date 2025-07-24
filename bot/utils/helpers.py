@@ -224,6 +224,7 @@ async def fetch_transcription_result(
                                     ai_response=ai_response,
                                     status=1,
                                     hashes=[],
+                                    category="Голосовое",
                                 )
                             else:
                                 err_msg = "⚠️ Прошу прощения, я не смогла обработать Ваш запрос. Попробуйте позже..."
@@ -235,6 +236,7 @@ async def fetch_transcription_result(
                                     ai_response=err_msg,
                                     status=0,
                                     hashes=[],
+                                    category="Голосовое",
                                 )
                                 await message.answer(err_msg, parse_mode=ParseMode.HTML)
                     else:
@@ -247,6 +249,7 @@ async def fetch_transcription_result(
                             ai_response="Не удалось получить текст транскрипции",
                             status=0,
                             hashes=[],
+                            category="Голосовое",
                         )
                         await message.answer(
                             "❌ Не удалось получить текст транскрипции. Пожалуйста, попробуйте позже."
@@ -261,6 +264,7 @@ async def fetch_transcription_result(
                         ai_response="Не удалось найти транскрипцию в ответе от сервера",
                         status=0,
                         hashes=[],
+                        category="Голосовое",
                     )
                     await message.answer(
                         "❌ Не удалось найти транскрипцию в ответе от сервера."
@@ -275,6 +279,7 @@ async def fetch_transcription_result(
                     ai_response="Не удалось получить результат транскрипции",
                     status=0,
                     hashes=[],
+                    category="Голосовое",
                 )
                 await message.answer("❌ Не удалось получить результат транскрипции.")
 
@@ -288,6 +293,7 @@ async def fetch_transcription_result(
             ai_response=str(e),
             status=0,
             hashes=[],
+            category="Голосовое",
         )
         await message.answer("❌ Ошибка при получении результата транскрипции.")
 
@@ -303,6 +309,9 @@ async def classify_and_process_query(
         user_id: ID пользователя
         message: Сообщение от пользователя
     """
+    logger.debug(
+        f"🔄 Начинаем классификацию запроса пользователя {user_id}: {user_query[:100]}..."
+    )
     try:
         # Категории запросов
         categories = ["Тарифы", "Общий"]
@@ -323,6 +332,7 @@ async def classify_and_process_query(
         """
 
         # Классифицируем запрос
+        logger.debug("🤖 Отправляем запрос на классификацию к AI модели...")
         selected_model = user_model.get(user_id, "mistral-large-latest")
         classification_result = await call_ai(
             text=classification_prompt,
@@ -330,6 +340,8 @@ async def classify_and_process_query(
             chat_history="",
             model=selected_model,
         )
+
+        logger.debug(f"📥 Результат классификации: {classification_result}")
 
         if not classification_result:
             logger.error(
@@ -339,26 +351,36 @@ async def classify_and_process_query(
             return
 
         # Определяем категорию и извлекаем адрес
+        logger.debug("🔍 Начинаем разбор результата классификации...")
         category = None
         extracted_address = None
         classification_lower = classification_result.lower().strip()
+        logger.debug(f"📝 Результат для анализа: {classification_lower}")
 
         # Парсим категорию
         if "тариф" in classification_lower:
             category = "Тарифы"
+            logger.debug("✅ Определена категория: Тарифы")
         elif "общий" in classification_lower:
             category = "Общий"
+            logger.debug("✅ Определена категория: Общий")
         else:
             category = "Общий"
+            logger.debug("⚠️ Категория не определена, используем: Общий")
 
         # Парсим адрес из ответа LLM
+        logger.debug("🏠 Ищем адрес в ответе...")
         lines = classification_result.split("\n")
         for line in lines:
             if "адрес:" in line.lower():
                 address_part = line.split(":", 1)[1].strip()
                 if address_part and address_part.lower() != "не найден":
                     extracted_address = address_part
+                    logger.debug(f"📍 Найден адрес: {extracted_address}")
                 break
+
+        if not extracted_address:
+            logger.debug("❌ Адрес не найден в ответе")
 
         logger.info(
             f"Запрос пользователя {user_id} классифицирован как: {category}, извлеченный адрес: {extracted_address}"
@@ -366,8 +388,10 @@ async def classify_and_process_query(
 
         # Обрабатываем запрос в зависимости от категории
         if category == "Тарифы":
+            logger.debug("🎯 Переходим к обработке тарифного запроса")
             await _handle_tariff_query(user_query, user_id, message, extracted_address)
         else:
+            logger.debug("💬 Переходим к обработке общего запроса")
             await _handle_general_query(user_query, user_id, message)
 
     except Exception as e:
@@ -387,12 +411,23 @@ async def _handle_tariff_query(
     Обрабатывает запрос категории 'Тарифы'
     """
     try:
+        logger.debug(
+            f"🏢 Начинаем обработку тарифного запроса для пользователя {user_id}"
+        )
+        logger.debug(f"📝 Текст запроса: {user_query}")
+        logger.debug(f"📍 Извлеченный адрес: {extracted_address}")
+
         # Ищем адрес в запросе через микросервис
+        logger.debug("🔍 Ищем house_id через микросервис...")
         house_id = await _extract_address_from_query(user_query)
+        logger.debug(f"🏠 Результат поиска house_id: {house_id}")
 
         if not house_id:
             # Если микросервис не нашел house_id, но у нас есть извлеченный адрес из LLM
             if extracted_address:
+                logger.debug(
+                    "📍 Микросервис не нашел house_id, используем извлеченный адрес"
+                )
                 logger.info(
                     f"Микросервис не нашел house_id, используем извлеченный адрес: {extracted_address}"
                 )
@@ -401,6 +436,7 @@ async def _handle_tariff_query(
                 )
                 return
             # Адрес не найден, просим пользователя указать адрес
+            logger.debug("❌ Адрес не найден, запрашиваем у пользователя")
             await message.answer(
                 "🏠 Для получения информации о тарифах необходимо указать адрес.\n\n"
                 "📍 Пожалуйста, укажите адрес (населенный пункт, улица, дом) для поиска доступных тарифов."
@@ -413,13 +449,17 @@ async def _handle_tariff_query(
                 ai_response="Запрос о тарифах без указания адреса",
                 status=0,
                 hashes=[],
+                category="Тарифы",
             )
             return
 
         # Получаем конкретный адрес по ID
+        logger.debug(f"🔍 Получаем адрес по house_id: {house_id}")
         api_response = await utils_client.get_address_by_id(house_id)
+        logger.debug(f"📋 Ответ API для адреса: {api_response}")
 
         if not api_response.success or not api_response.data:
+            logger.debug("❌ API не вернул данные адреса")
             await message.answer(
                 "❌ Не удалось найти адрес по указанному запросу. "
                 "Попробуйте уточнить адрес.",
@@ -431,6 +471,7 @@ async def _handle_tariff_query(
                 ai_response="Адрес не найден по ID",
                 status=0,
                 hashes=[],
+                category="Тарифы",
             )
             return
 
@@ -441,7 +482,13 @@ async def _handle_tariff_query(
         territory_name = address_data.get("territory_name", "")
         conn_type = address_data.get("conn_type", [])
 
+        logger.debug(f"📍 Адрес: {address}")
+        logger.debug(f"🌍 Territory ID: {territory_id}")
+        logger.debug(f"🏛️ Territory Name: {territory_name}")
+        logger.debug(f"🔌 Типы подключения: {conn_type}")
+
         if not territory_id:
+            logger.debug("❌ Territory ID отсутствует")
             await message.answer(
                 "❌ Не удалось получить данные территории для найденного адреса.",
                 parse_mode=ParseMode.HTML,
@@ -452,10 +499,12 @@ async def _handle_tariff_query(
                 ai_response="Territory ID не найден",
                 status=0,
                 hashes=[],
+                category="Тарифы",
             )
             return
 
             # Сохраняем данные для дальнейшего использования
+        logger.debug("💾 Сохраняем данные запроса для дальнейшего использования")
         user_tariff_queries[user_id] = {
             "query": user_query,
             "territory_id": territory_id,
@@ -479,6 +528,7 @@ async def _handle_tariff_query(
             ai_response=str(e),
             status=0,
             hashes=[],
+            category="Тарифы",
         )
 
 
@@ -609,6 +659,7 @@ async def _process_confirmed_tariff_request(
                 ai_response="Тарифы не найдены для territory_id",
                 status=0,
                 hashes=[],
+                category="Тарифы",
             )
             return
 
@@ -658,6 +709,7 @@ async def _process_confirmed_tariff_request(
                 ai_response=ai_response,
                 status=1,
                 hashes=[],
+                category="Тарифы",
             )
             logger.info(f"Успешно обработан тарифный запрос пользователя {user_id}")
         else:
@@ -671,6 +723,7 @@ async def _process_confirmed_tariff_request(
                 ai_response=error_msg,
                 status=0,
                 hashes=[],
+                category="Тарифы",
             )
 
         # Очищаем сохраненные данные
@@ -729,6 +782,7 @@ async def _handle_general_query(
                     ai_response=ai_response,
                     status=1,
                     hashes=result.get("hashs", []),
+                    category="Общий",
                 )
                 logger.info(f"Успешно обработан общий запрос пользователя {user_id}")
             else:
@@ -740,6 +794,7 @@ async def _handle_general_query(
                     ai_response=error_msg,
                     status=0,
                     hashes=result.get("hashs", []),
+                    category="Общий",
                 )
         else:
             await message.answer(
@@ -757,6 +812,7 @@ async def _handle_general_query(
             ai_response=str(e),
             status=0,
             hashes=[],
+            category="Общий",
         )
         await message.answer(
             "❌ Произошла ошибка при обработке запроса",
@@ -830,6 +886,7 @@ async def _handle_tariff_via_redis_addresses(
                 ai_response="Адреса не найдены через redis_addresses",
                 status=0,
                 hashes=[],
+                category="Тарифы",
             )
             return
 
@@ -846,6 +903,7 @@ async def _handle_tariff_via_redis_addresses(
                 ai_response="Пустой список адресов",
                 status=0,
                 hashes=[],
+                category="Тарифы",
             )
             return
 
@@ -865,6 +923,7 @@ async def _handle_tariff_via_redis_addresses(
                 ai_response="Territory ID не найден в первом адресе",
                 status=0,
                 hashes=[],
+                category="Тарифы",
             )
             return
 
@@ -883,6 +942,7 @@ async def _handle_tariff_via_redis_addresses(
                 ai_response="Тарифы не найдены для territory_id из redis_addresses",
                 status=0,
                 hashes=[],
+                category="Тарифы",
             )
             return
 
@@ -909,6 +969,7 @@ async def _handle_tariff_via_redis_addresses(
                 ai_response=ai_response,
                 status=1,
                 hashes=[],
+                category="Тарифы",
             )
             logger.info(
                 f"Успешно обработан тарифный запрос через redis_addresses для пользователя {user_id}"

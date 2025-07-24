@@ -109,6 +109,7 @@ async def message_handler(message: Message, state: FSMContext):
                 ai_response=str(e),
                 status=0,
                 hashes=[],
+                category="Общий",
             )
         except Exception as log_error:
             logger.error(f"Не удалось отправить сообщение об ошибке: {log_error}")

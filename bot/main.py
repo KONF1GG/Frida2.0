@@ -4,6 +4,7 @@
 """
 
 import asyncio
+import logging
 import signal
 import sys
 from typing import Optional
@@ -16,9 +17,12 @@ from aiogram.types import BotCommand
 
 from bot.handlers import register_all_handlers
 from bot.config import bot_config
-from bot.utils.logger import setup_logger
+from bot.utils.logger import setup_logger, setup_root_logger
 
-# Настройка логирования
+# Настройка корневого логирования в самом начале
+setup_root_logger(level=logging.INFO)
+
+# Настройка логирования для модуля
 logger = setup_logger(__name__)
 
 

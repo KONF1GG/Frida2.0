@@ -198,6 +198,7 @@ class UtilsAPIClient(BaseAPIClient):
         ai_response: str,
         status: Literal[1, 0],
         hashes: List[str],
+        category: str = "Общий",
     ) -> APIResponse:
         """Логирование сообщения"""
         return await self.post(
@@ -208,6 +209,7 @@ class UtilsAPIClient(BaseAPIClient):
                 "ai_response": ai_response,
                 "status": status,
                 "hashes": hashes,
+                "category": category,
             },
         )
 

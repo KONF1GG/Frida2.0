@@ -1,15 +1,22 @@
 from aiogram import Router, F
 from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import (
+    Message,
+    CallbackQuery,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+)
 from aiogram.exceptions import TelegramBadRequest
 import logging
 from bot.utils.decorators import check_and_add_user, send_typing_action
 from bot.utils.user_settings import MODEL_MAPPING, user_model
+from bot.api.log import log
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
 
 router = Router()
+
 
 def _get_model_keyboard(current: str) -> InlineKeyboardMarkup:
     """Клавиатура для выбора модели с галочкой у выбранной"""
@@ -22,8 +29,7 @@ def _get_model_keyboard(current: str) -> InlineKeyboardMarkup:
         prefix = "✅ " if MODEL_MAPPING.get(key) == current else ""
         buttons.append(
             InlineKeyboardButton(
-                text=f"{prefix}{label}",
-                callback_data=f"set_model:{key}"
+                text=f"{prefix}{label}", callback_data=f"set_model:{key}"
             )
         )
     return InlineKeyboardMarkup(inline_keyboard=[buttons])
@@ -39,9 +45,18 @@ async def command_model(message: Message):
         return
 
     current = user_model.get(message.from_user.id, "mistral-large-latest")
-    await message.answer(
-        "Пожалуйста, выберите модель для обработки запросов:",
-        reply_markup=_get_model_keyboard(current)
+    response_text = "Пожалуйста, выберите модель для обработки запросов:"
+
+    await message.answer(response_text, reply_markup=_get_model_keyboard(current))
+
+    # Логируем команду model
+    await log(
+        user_id=message.from_user.id,
+        query="/model",
+        ai_response=response_text,
+        status=1,
+        hashes=[],
+        category="Команда",
     )
 
 
@@ -53,50 +68,65 @@ async def callback_set_model(call: CallbackQuery):
     if not call or not call.data:
         logger.warning("Получен пустой callback query")
         return
-        
+
     if not call.from_user:
         logger.warning("Callback query без информации о пользователе")
         return
-        
+
     try:
         parts = call.data.split(":")
         if len(parts) != 2:
             logger.warning(f"Неверный формат callback data: {call.data}")
             return
-            
+
         _, chosen = parts
         selected_model = MODEL_MAPPING.get(chosen, "mistral-large-latest")
         user_model[call.from_user.id] = selected_model
-        
+
         # Отправляем уведомление
         await call.answer(f"Модель изменена на {chosen.upper()}", show_alert=False)
-        
+
+        # Логируем изменение модели
+        await log(
+            user_id=call.from_user.id,
+            query=f"/model - {chosen}",
+            ai_response=f"Модель изменена на {chosen.upper()}",
+            status=1,
+            hashes=[],
+            category="Команда",
+        )
+
         # Обновляем сообщение, если возможно
         if call.message:
             try:
                 model_name_display = {
                     "mistral-large-latest": "Mistral",
                     "gpt-4o-mini": "GPT",
-                    "deepseek/deepseek-chat-v3-0324:free": "DeepSeek"
+                    "deepseek/deepseek-chat-v3-0324:free": "DeepSeek",
                 }.get(selected_model, selected_model)
 
                 await call.message.edit_text(
                     f"✅ Вы выбрали модель: <b>{model_name_display}</b>",
                     reply_markup=_get_model_keyboard(selected_model),
-                    parse_mode="HTML"
+                    parse_mode="HTML",
                 )
-                logger.info(f"Пользователь {call.from_user.id} выбрал модель {selected_model}")
+                logger.info(
+                    f"Пользователь {call.from_user.id} выбрал модель {selected_model}"
+                )
             except TelegramBadRequest as e:
                 logger.warning(f"Не удалось отредактировать сообщение: {e}")
                 if "message is not modified" in str(e).lower():
-                    pass 
+                    pass
                 else:
                     try:
-                        await call.message.answer(f"✅ Вы выбрали модель: <b>{model_name_display}</b>", parse_mode="HTML")
+                        await call.message.answer(
+                            f"✅ Вы выбрали модель: <b>{model_name_display}</b>",
+                            parse_mode="HTML",
+                        )
                     except Exception as msg_e:
                         logger.error(f"Не удалось отправить сообщение: {msg_e}")
         else:
             logger.warning("Callback message is None, невозможно обновить")
-            
+
     except Exception as e:
         logger.error(f"Ошибка при обработке выбора модели: {e}")

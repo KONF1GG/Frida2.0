@@ -17,6 +17,7 @@ async def log(
     ai_response: str,
     status: Literal[1, 0],
     hashes: List[str],
+    category: str = "Общий",
 ) -> bool:
     """
     Логирование сообщения пользователя
@@ -27,6 +28,7 @@ async def log(
         ai_response: Ответ AI
         status: Статус обработки (1 - успех, 0 - ошибка)
         hashes: Список хешей релевантных документов
+        category: Категория запроса (Тарифы, Общий, и т.д.)
 
     Returns:
         True в случае успешного логирования, False иначе
@@ -38,6 +40,7 @@ async def log(
             ai_response=ai_response,
             status=status,
             hashes=hashes,
+            category=category,
         )
 
         if response.success:

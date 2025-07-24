@@ -14,6 +14,7 @@ from aiogram.types import (
 from aiogram.filters import Command
 from bot.api.base import utils_client
 from bot.utils.decorators import check_and_add_user, send_typing_action
+from bot.api.log import log
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
@@ -35,11 +36,24 @@ async def inline_hint(message: Message):
             ]
         ]
     )
+    response_text = f"Нажмите кнопку ниже — в строке ввода появится <code>@{bot_username} </code> и вы сможете сразу ввести адрес для поиска информации по тарифам."
+
     await message.answer(
-        f"Нажмите кнопку ниже — в строке ввода появится <code>@{bot_username} </code> и вы сможете сразу ввести адрес для поиска информации по тарифам.",
+        response_text,
         reply_markup=keyboard,
         parse_mode="HTML",
     )
+
+    # Логируем команду tariff
+    if message.from_user:
+        await log(
+            user_id=message.from_user.id,
+            query="/tariff",
+            ai_response=response_text,
+            status=1,
+            hashes=[],
+            category="Команда",
+        )
 
 
 @router.inline_query()
