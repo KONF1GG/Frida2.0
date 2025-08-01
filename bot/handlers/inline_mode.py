@@ -12,7 +12,7 @@ from aiogram.types import (
     InlineKeyboardButton,
 )
 from aiogram.filters import Command
-from bot.api.base import utils_client
+from bot.api.base import core_client
 from bot.utils.decorators import check_and_add_user, send_typing_action
 from bot.api.log import log
 
@@ -71,7 +71,7 @@ async def inline_address_search(inline_query: InlineQuery):
             return
 
         # Запрос к redis_addresses
-        api_response = await utils_client.get_addresses_from_redis(query)
+        api_response = await core_client.get_addresses_from_redis(query)
         if not api_response.success or not api_response.data:
             await inline_query.answer(
                 [],

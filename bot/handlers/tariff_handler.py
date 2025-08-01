@@ -5,7 +5,7 @@ from aiogram import Router, F
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from bot.api.base import utils_client
+from bot.api.base import core_client
 from bot.config import bot_config
 
 from bot.api.ai import call_ai
@@ -39,7 +39,7 @@ async def handle_tariff_message(message: Message, state: FSMContext):
         return
 
     terr_id = tariff_code.split("_")[1]
-    api_response = await utils_client.get_tariffs_from_redis(terr_id)
+    api_response = await core_client.get_tariffs_from_redis(terr_id)
 
     if not api_response.success or not api_response.data:
         await message.answer("⚠️ Что-то пошло не так. Попробуйте позже")

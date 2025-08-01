@@ -6,7 +6,7 @@
 import logging
 from typing import Optional, Literal
 
-from .base import utils_client
+from .base import core_client
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ async def call_ai(
         Ответ от AI или None в случае ошибки
     """
     try:
-        response = await utils_client.call_ai(
+        response = await core_client.call_ai(
             text=text,
             combined_context=combined_context,
             chat_history=chat_history or "",

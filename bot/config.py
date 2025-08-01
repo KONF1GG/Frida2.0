@@ -16,6 +16,7 @@ class BotConfig:
     api_key: str
     whisper_api: str
     utils_url: str
+    core_url: str
     loading_sticker: str = (
         "CAACAgIAAxkBAAJMS2YHPrVKVmiyNhVR3J5vQE2Qpu-kAAIjAAMoD2oUJ1El54wgpAY0BA"
     )
@@ -42,7 +43,7 @@ class DatabaseConfig:
 
 def get_bot_config() -> BotConfig:
     """Получить конфигурацию бота"""
-    required_vars = ["TOKEN", "TEST_TOKEN", "API_KEY", "WHISPER_API", "UTILS_URL"]
+    required_vars = ["TOKEN", "TEST_TOKEN", "API_KEY", "WHISPER_API", "UTILS_URL", "CORE_URL"]
     missing_vars = [var for var in required_vars if not os.getenv(var)]
 
     if missing_vars:
@@ -56,6 +57,7 @@ def get_bot_config() -> BotConfig:
         api_key=str(os.getenv("API_KEY")),
         whisper_api=str(os.getenv("WHISPER_API")),
         utils_url=str(os.getenv("UTILS_URL")),
+        core_url=str(os.getenv("CORE_URL")),
     )
 
 
@@ -85,4 +87,5 @@ TEST_TOKEN = bot_config.test_token
 API_KEY = bot_config.api_key
 WHISPER_API = bot_config.whisper_api
 UTILS_URL = bot_config.utils_url
+CORE_URL = bot_config.core_url
 loading_sticker = bot_config.loading_sticker

@@ -17,7 +17,7 @@ from bot.config import bot_config
 from bot.api.milvus import search_milvus
 from bot.api.ai import call_ai
 from bot.api.log import log
-from bot.api.base import utils_client
+from bot.api.base import core_client
 from bot.utils.user_settings import user_model
 
 logger = logging.getLogger(__name__)
@@ -455,7 +455,7 @@ async def _handle_tariff_query(
 
         # Получаем конкретный адрес по ID
         logger.debug(f"🔍 Получаем адрес по house_id: {house_id}")
-        api_response = await utils_client.get_address_by_id(house_id)
+        api_response = await core_client.get_address_by_id(house_id)
         logger.debug(f"📋 Ответ API для адреса: {api_response}")
 
         if not api_response.success or not api_response.data:
@@ -645,7 +645,7 @@ async def _process_confirmed_tariff_request(
         loading_message = await message.answer_sticker(bot_config.loading_sticker)
 
         # Получаем данные о тарифах из Redis по territory_id
-        api_response = await utils_client.get_tariffs_from_redis(territory_id)
+        api_response = await core_client.get_tariffs_from_redis(territory_id)
 
         if not api_response.success or not api_response.data:
             await message.edit_text(
@@ -872,7 +872,7 @@ async def _handle_tariff_via_redis_addresses(
     """
     try:
         # Ищем адреса через redis_addresses
-        api_response = await utils_client.get_addresses_from_redis(extracted_address)
+        api_response = await core_client.get_addresses_from_redis(extracted_address)
 
         if not api_response.success or not api_response.data:
             await message.answer(
@@ -928,7 +928,7 @@ async def _handle_tariff_via_redis_addresses(
             return
 
         # Получаем тарифы для территории
-        tariffs_response = await utils_client.get_tariffs_from_redis(territory_id)
+        tariffs_response = await core_client.get_tariffs_from_redis(territory_id)
 
         if not tariffs_response.success or not tariffs_response.data:
             await message.answer(

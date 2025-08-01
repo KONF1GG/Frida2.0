@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 import logging
 from aiogram.types import Message
 
-from .base import utils_client
+from .base import core_client
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ async def check_and_register_user(
         True в случае успешной регистрации/проверки, False иначе
     """
     try:
-        response = await utils_client.register_user(
+        response = await core_client.register_user(
             user_id=user_id,
             firstname=first_name,
             lastname=last_name or "",
@@ -46,8 +46,7 @@ async def check_and_register_user(
         elif response.status_code == 403:
             if message:
                 await message.answer(
-                    "Кажется, вы не являетесь сотрудником компании Фридом. "
-                    'Если это не так, обратитесь, пожалуйста, к <a href="https://t.me/Leontykro">@Leontykro</a>.',
+                    "⚠️ Для использования бота сотрудникам компании нужно зарегистрироваться в чате «Поговорить».",
                     parse_mode="HTML",
                 )
             return False
@@ -80,7 +79,7 @@ async def get_admins() -> List[Dict[str, str]]:
         ValueError: Если получены некорректные данные
     """
     try:
-        response = await utils_client.get_admins()
+        response = await core_client.get_admins()
 
         if response.success and response.data:
             admins = response.data

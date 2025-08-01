@@ -6,7 +6,7 @@
 import logging
 from typing import List, Literal
 
-from .base import utils_client
+from .base import core_client
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ async def log(
         True в случае успешного логирования, False иначе
     """
     try:
-        response = await utils_client.log_message(
+        response = await core_client.log_message(
             user_id=user_id,
             query=query,
             ai_response=ai_response,

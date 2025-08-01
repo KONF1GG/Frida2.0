@@ -4,6 +4,7 @@
 """
 
 import asyncio
+from unittest.mock import Base
 import aiohttp
 import logging
 from abc import ABC
@@ -171,6 +172,17 @@ class UtilsAPIClient(BaseAPIClient):
             "v1/mlv_search", params={"user_id": user_id, "text": text}
         )
 
+    async def upload_wiki_data(self, user_id: int) -> APIResponse:
+        """Загрузка данных Wiki"""
+        return await self.post("v1/upload_wiki_data", json_data={"user_id": user_id})
+
+
+class CoreClient(BaseAPIClient):
+    """Клиент для работы с Core API"""
+
+    def __init__(self):
+        super().__init__(base_url=bot_config.core_url)
+
     async def call_ai(
         self,
         text: str,
@@ -213,10 +225,6 @@ class UtilsAPIClient(BaseAPIClient):
             },
         )
 
-    async def upload_wiki_data(self, user_id: int) -> APIResponse:
-        """Загрузка данных Wiki"""
-        return await self.post("v1/upload_wiki_data", json_data={"user_id": user_id})
-
     async def register_user(
         self, user_id: int, firstname: str, lastname: str, username: str
     ) -> APIResponse:
@@ -252,3 +260,4 @@ class UtilsAPIClient(BaseAPIClient):
 
 # Глобальный экземпляр клиента
 utils_client = UtilsAPIClient()
+core_client = CoreClient()
