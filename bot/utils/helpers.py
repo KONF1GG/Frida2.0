@@ -319,7 +319,7 @@ async def classify_and_process_query(
         # Создаем промпт для классификации
         classification_prompt = f"""
         Определи категорию следующего запроса пользователя и извлеки адрес, если он есть.
-        Важно: Категория "Тарифы" определяется только когда в предложении используется непосредственно слово: "тариф"
+        Категория "Тарифы" - только, если в запросе есть слово "тариф"
         
         Доступные категории: {", ".join(categories)}.
         
@@ -333,7 +333,7 @@ async def classify_and_process_query(
         """
 
         # Классифицируем запрос
-        logger.debug("🤖 Отправляем запрос на классификацию к AI модели...")
+        logger.debug(f"🤖 Отправляем запрос на классификацию к AI модели... {classification_prompt}")
         selected_model = user_model.get(user_id, "mistral-large-latest")
         classification_result = await call_ai(
             text=classification_prompt,
